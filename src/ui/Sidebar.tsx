@@ -7,42 +7,45 @@ import { supabase } from "@/lib/supabase";
 
 type Role = "ADMIN" | "COIFFEUR";
 
-export default function Sidebar()
-{
+const liens = [
+  {
+    nom: "Accueil",
+    emoji: "🏠",
+    href: "/dashboard",
+  },
+  {
+    nom: "Clients",
+    emoji: "👥",
+    href: "/clients",
+  },
+  {
+    nom: "SMS",
+    emoji: "💬",
+    href: "/sms",
+  },
+];
+
+export default function Sidebar() {
   const pathname = usePathname();
 
   const [role, setRole] = useState<Role | null>(null);
   const [menuOuvert, setMenuOuvert] = useState(false);
 
-  useEffect(() =>
-  {
-    async function chargerRole()
-    {
-      const
-      {
-        data:
-        {
-          user
-        }
+  useEffect(() => {
+    async function chargerRole() {
+      const {
+        data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user)
-      {
-        return;
-      }
+      if (!user) return;
 
-      const
-      {
-        data,
-        error
-      } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("role")
         .eq("user_id", user.id)
         .single();
 
-      if (error)
-      {
+      if (error) {
         console.error("Erreur rôle :", error);
         return;
       }
@@ -53,69 +56,51 @@ export default function Sidebar()
     chargerRole();
   }, []);
 
-  async function seDeconnecter()
-  {
+  async function seDeconnecter() {
     await supabase.auth.signOut();
-
     window.location.href = "/";
   }
 
-  const liens =
-  [
-    {
-      nom: "Accueil",
-      emoji: "🏠",
-      href: "/dashboard"
-    },
-    {
-      nom: "Clients",
-      emoji: "👥",
-      href: "/clients"
-    },
-    {
-      nom: "SMS",
-      emoji: "💬",
-      href: "/sms"
-    }
-  ];
-
-  function fermerMenu()
-  {
+  function fermerMenu() {
     setMenuOuvert(false);
   }
 
-  function lienEstActif(href: string)
-  {
-    if (href === "/dashboard")
-    {
+  function lienEstActif(href: string) {
+    if (href === "/dashboard") {
       return pathname === "/dashboard";
     }
 
     return pathname.startsWith(href);
   }
 
+  function classeLien(href: string) {
+    return lienEstActif(href)
+      ? "flex min-h-12 items-center gap-3 rounded-xl bg-gray-800 px-4 py-3 font-medium text-white"
+      : "flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-gray-300 hover:bg-gray-800";
+  }
+
   return (
     <>
       {/* ============================================================
-          MOBILE
+          MOBILE / IPHONE / IPAD
       ============================================================ */}
 
-      <header className="sticky top-0 z-50 border-b border-gray-800 bg-gray-900 md:hidden">
+      <header className="sticky top-0 z-50 border-b border-gray-800 bg-gray-900/95 backdrop-blur md:hidden">
 
-        <div className="flex min-h-16 items-center justify-between gap-3 px-4">
+        <div className="flex min-h-16 items-center justify-between px-4">
 
           <Link
             href="/dashboard"
             onClick={fermerMenu}
-            className="shrink-0 text-xl font-bold text-white"
+            className="text-lg font-bold text-white sm:text-xl"
           >
             ✂️ LJ BARBER
           </Link>
 
           <button
             type="button"
-            onClick={() => setMenuOuvert(!menuOuvert)}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-gray-700 text-xl text-white"
+            onClick={() => setMenuOuvert((ouvert) => !ouvert)}
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-700 text-xl text-white active:bg-gray-800"
             aria-label={
               menuOuvert
                 ? "Fermer le menu"
@@ -127,55 +112,56 @@ export default function Sidebar()
 
         </div>
 
-
         {menuOuvert && (
-          <div className="border-t border-gray-800 px-4 pb-4 pt-3">
+          <div className="border-t border-gray-800 bg-gray-900 px-4 pb-4 pt-3">
 
             <nav className="space-y-2">
 
-              {liens.map((lien) =>
-              {
-                const actif =
-                  lienEstActif(lien.href);
+              {liens.map((lien) => (
+                <Link
+                  key={lien.href}
+                  href={lien.href}
+                  onClick={fermerMenu}
+                  className={classeLien(lien.href)}
+                >
+                  <span className="text-lg">
+                    {lien.emoji}
+                  </span>
 
-                return (
-                  <Link
-                    key={lien.href}
-                    href={lien.href}
-                    onClick={fermerMenu}
-                    className={
-                      actif
-                        ? "block rounded-lg bg-gray-800 px-4 py-3 text-white"
-                        : "block rounded-lg px-4 py-3 text-gray-300 hover:bg-gray-800"
-                    }
-                  >
-                    {lien.emoji} {lien.nom}
-                  </Link>
-                );
-              })}
-
+                  <span>
+                    {lien.nom}
+                  </span>
+                </Link>
+              ))}
 
               {role === "ADMIN" && (
                 <Link
                   href="/administration"
                   onClick={fermerMenu}
-                  className={
-                    lienEstActif("/administration")
-                      ? "block rounded-lg bg-gray-800 px-4 py-3 text-white"
-                      : "block rounded-lg px-4 py-3 text-gray-300 hover:bg-gray-800"
-                  }
+                  className={classeLien("/administration")}
                 >
-                  🔐 Administration
+                  <span className="text-lg">
+                    🔐
+                  </span>
+
+                  <span>
+                    Administration
+                  </span>
                 </Link>
               )}
-
 
               <button
                 type="button"
                 onClick={seDeconnecter}
-                className="mt-3 w-full rounded-lg border border-gray-700 px-4 py-3 text-left text-gray-300 hover:bg-gray-800"
+                className="mt-4 flex min-h-12 w-full items-center gap-3 rounded-xl border border-gray-700 px-4 py-3 text-left text-gray-300 active:bg-gray-800"
               >
-                🚪 Déconnexion
+                <span className="text-lg">
+                  🚪
+                </span>
+
+                <span>
+                  Déconnexion
+                </span>
               </button>
 
             </nav>
@@ -187,10 +173,10 @@ export default function Sidebar()
 
 
       {/* ============================================================
-          ORDINATEUR / GRAND ÉCRAN
+          ORDINATEUR / IPAD HORIZONTAL
       ============================================================ */}
 
-      <aside className="hidden w-64 shrink-0 border-r border-gray-800 bg-gray-900 p-5 md:block">
+      <aside className="hidden min-h-screen w-64 shrink-0 border-r border-gray-800 bg-gray-900 p-5 md:flex md:flex-col">
 
         <div className="mb-8">
 
@@ -207,52 +193,53 @@ export default function Sidebar()
 
         </div>
 
-
         <nav className="space-y-2">
 
-          {liens.map((lien) =>
-          {
-            const actif =
-              lienEstActif(lien.href);
+          {liens.map((lien) => (
+            <Link
+              key={lien.href}
+              href={lien.href}
+              className={classeLien(lien.href)}
+            >
+              <span className="text-lg">
+                {lien.emoji}
+              </span>
 
-            return (
-              <Link
-                key={lien.href}
-                href={lien.href}
-                className={
-                  actif
-                    ? "block rounded-lg bg-gray-800 px-4 py-3 text-white"
-                    : "block rounded-lg px-4 py-3 text-gray-300 hover:bg-gray-800"
-                }
-              >
-                {lien.emoji} {lien.nom}
-              </Link>
-            );
-          })}
-
+              <span>
+                {lien.nom}
+              </span>
+            </Link>
+          ))}
 
           {role === "ADMIN" && (
             <Link
               href="/administration"
-              className={
-                lienEstActif("/administration")
-                  ? "block rounded-lg bg-gray-800 px-4 py-3 text-white"
-                  : "block rounded-lg px-4 py-3 text-gray-300 hover:bg-gray-800"
-              }
+              className={classeLien("/administration")}
             >
-              🔐 Administration
+              <span className="text-lg">
+                🔐
+              </span>
+
+              <span>
+                Administration
+              </span>
             </Link>
           )}
 
         </nav>
 
-
         <button
           type="button"
           onClick={seDeconnecter}
-          className="mt-10 w-full rounded-lg border border-gray-700 px-4 py-3 text-left text-gray-300 hover:bg-gray-800"
+          className="mt-auto flex min-h-12 w-full items-center gap-3 rounded-xl border border-gray-700 px-4 py-3 text-left text-gray-300 hover:bg-gray-800"
         >
-          🚪 Déconnexion
+          <span className="text-lg">
+            🚪
+          </span>
+
+          <span>
+            Déconnexion
+          </span>
         </button>
 
       </aside>

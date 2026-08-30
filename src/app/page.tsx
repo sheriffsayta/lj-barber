@@ -3,34 +3,21 @@
 import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-type Profile =
-{
-  nom: string;
-  role: "ADMIN" | "COIFFEUR";
-};
-
-export default function Home()
-{
+export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [connexion, setConnexion] = useState(false);
   const [message, setMessage] = useState("");
 
-  useEffect(() =>
-  {
-    async function verifierConnexion()
-    {
-      const
-      {
-        data:
-        {
-          session
-        }
+  useEffect(() => {
+    async function verifierConnexion() {
+      const {
+        data: { session },
       } = await supabase.auth.getSession();
 
-      if (session?.user)
-      {
+      if (session?.user) {
         window.location.href = "/dashboard";
         return;
       }
@@ -41,26 +28,25 @@ export default function Home()
     verifierConnexion();
   }, []);
 
-  async function seConnecter(event: FormEvent<HTMLFormElement>)
-  {
+  async function seConnecter(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
     setConnexion(true);
     setMessage("");
 
-    const
-    {
-      error
-    } = await supabase.auth.signInWithPassword(
-      {
+    const { error } =
+      await supabase.auth.signInWithPassword({
         email,
-        password
-      }
-    );
+        password,
+      });
 
-    if (error)
-    {
-      setMessage("Email ou mot de passe incorrect.");
+    if (error) {
+      setMessage(
+        "Email ou mot de passe incorrect."
+      );
+
       setConnexion(false);
       return;
     }
@@ -68,21 +54,20 @@ export default function Home()
     window.location.href = "/dashboard";
   }
 
-  if (loading)
-  {
+  if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-950 text-white">
-        <p>
-          Chargement...
-        </p>
+      <main className="flex min-h-screen items-center justify-center bg-gray-950 px-4 text-white">
+        <p>Chargement...</p>
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-950 p-6 text-white">
+    <main className="flex min-h-screen items-center justify-center bg-gray-950 px-4 py-8 text-white sm:px-6">
 
-      <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-gray-900 p-8 shadow-lg">
+      <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg sm:p-8">
+
+        {/* LOGO / TITRE */}
 
         <div className="mb-8 text-center">
 
@@ -90,15 +75,18 @@ export default function Home()
             ✂️
           </div>
 
-          <h1 className="text-3xl font-bold">
-            Salon CRM
+          <h1 className="text-2xl font-bold sm:text-3xl">
+            LJ BARBER
           </h1>
 
-          <p className="mt-2 text-gray-400">
+          <p className="mt-2 text-sm text-gray-400 sm:text-base">
             Espace professionnel
           </p>
 
         </div>
+
+
+        {/* FORMULAIRE */}
 
         <form
           onSubmit={seConnecter}
@@ -107,49 +95,69 @@ export default function Home()
 
           <div>
 
-            <label className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor="email"
+              className="mb-2 block text-sm font-medium"
+            >
               Email
             </label>
 
             <input
+              id="email"
               type="email"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) =>
+                setEmail(event.target.value)
+              }
               required
-              className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white outline-none focus:ring-2"
+              autoComplete="email"
+              inputMode="email"
+              className="min-h-12 w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-base text-white outline-none focus:border-gray-500 focus:ring-2"
               placeholder="votre@email.com"
             />
 
           </div>
 
+
           <div>
 
-            <label className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor="password"
+              className="mb-2 block text-sm font-medium"
+            >
               Mot de passe
             </label>
 
             <input
+              id="password"
               type="password"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) =>
+                setPassword(event.target.value)
+              }
               required
-              className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white outline-none focus:ring-2"
+              autoComplete="current-password"
+              className="min-h-12 w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-base text-white outline-none focus:border-gray-500 focus:ring-2"
               placeholder="••••••••"
             />
 
           </div>
 
-          {message &&
-          (
-            <div className="rounded-lg bg-red-950 p-3 text-sm text-red-300">
+
+          {message && (
+            <div
+              role="alert"
+              className="rounded-xl bg-red-950 p-3 text-sm text-red-300"
+            >
               {message}
             </div>
           )}
 
+
           <button
             type="submit"
             disabled={connexion}
-            className="w-full rounded-lg bg-white px-4 py-3 font-medium text-black hover:opacity-90 disabled:opacity-50"
+            className="min-h-12 w-full rounded-xl bg-white px-4 py-3 font-medium text-black transition hover:opacity-90 active:scale-[0.99] disabled:opacity-50"
           >
             {connexion
               ? "Connexion..."

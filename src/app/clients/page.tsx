@@ -23,9 +23,7 @@ export default function Clients()
   const [corbeille, setCorbeille] = useState<Client[]>([]);
 
   const [recherche, setRecherche] = useState("");
-
-  const [vue, setVue] =
-    useState<"clients" | "corbeille">("clients");
+  const [vue, setVue] = useState<"clients" | "corbeille">("clients");
 
   const [categoriesSelectionnees, setCategoriesSelectionnees] =
     useState<string[]>([]);
@@ -38,28 +36,19 @@ export default function Clients()
 
   const [loading, setLoading] = useState(true);
   const [erreur, setErreur] = useState("");
-
-  const [formulaireOuvert, setFormulaireOuvert] =
-    useState(false);
-
-  const [suppression, setSuppression] =
-    useState(false);
+  const [formulaireOuvert, setFormulaireOuvert] = useState(false);
+  const [suppression, setSuppression] = useState(false);
 
   async function chargerClients()
   {
     try
     {
-      const data = await rechercherClients();
-
-      setClients(data);
+      setClients(await rechercherClients());
     }
     catch (error)
     {
       console.error(error);
-
-      setErreur(
-        "Impossible de récupérer les clients."
-      );
+      setErreur("Impossible de récupérer les clients.");
     }
   }
 
@@ -67,17 +56,12 @@ export default function Clients()
   {
     try
     {
-      const data = await recupererCorbeille();
-
-      setCorbeille(data);
+      setCorbeille(await recupererCorbeille());
     }
     catch (error)
     {
       console.error(error);
-
-      setErreur(
-        "Impossible de récupérer la corbeille."
-      );
+      setErreur("Impossible de récupérer la corbeille.");
     }
   }
 
@@ -86,12 +70,10 @@ export default function Clients()
     setLoading(true);
     setErreur("");
 
-    await Promise.all(
-      [
-        chargerClients(),
-        chargerCorbeille()
-      ]
-    );
+    await Promise.all([
+      chargerClients(),
+      chargerCorbeille()
+    ]);
 
     setLoading(false);
   }
@@ -108,29 +90,25 @@ export default function Clients()
       setErreur("");
 
       await restaurerClient(id);
-
-      await chargerCorbeille();
-      await chargerClients();
+      await Promise.all([
+        chargerClients(),
+        chargerCorbeille()
+      ]);
     }
     catch (error)
     {
       console.error(error);
-
-      setErreur(
-        "Impossible de restaurer le client."
-      );
+      setErreur("Impossible de restaurer le client.");
     }
   }
 
-  async function supprimerDefinitivement(
-    client: Client
-  )
+  async function supprimerDefinitivement(client: Client)
   {
-    const confirmation = window.confirm(
-      `Supprimer définitivement ${client.prenom} ${client.nom} ?\n\nCette action est irréversible.`
-    );
-
-    if (!confirmation)
+    if (
+      !window.confirm(
+        `Supprimer définitivement ${client.prenom} ${client.nom} ?\n\nCette action est irréversible.`
+      )
+    )
     {
       return;
     }
@@ -139,16 +117,12 @@ export default function Clients()
     {
       setErreur("");
 
-      await supprimerClientDefinitivement(
-        client.id
-      );
-
+      await supprimerClientDefinitivement(client.id);
       await chargerCorbeille();
     }
     catch (error)
     {
       console.error(error);
-
       setErreur(
         "Impossible de supprimer définitivement le client."
       );
@@ -157,11 +131,11 @@ export default function Clients()
 
   async function supprimerAnciensClients()
   {
-    const confirmation = window.confirm(
-      "Supprimer définitivement tous les clients présents dans la corbeille depuis plus de 30 jours ?\n\nCette action est irréversible."
-    );
-
-    if (!confirmation)
+    if (
+      !window.confirm(
+        "Supprimer définitivement tous les clients présents dans la corbeille depuis plus de 30 jours ?\n\nCette action est irréversible."
+      )
+    )
     {
       return;
     }
@@ -172,16 +146,12 @@ export default function Clients()
       setErreur("");
 
       await supprimerClientsDePlusDe30Jours();
-
       await chargerCorbeille();
     }
     catch (error)
     {
       console.error(error);
-
-      setErreur(
-        "Impossible de supprimer les anciens clients."
-      );
+      setErreur("Impossible de supprimer les anciens clients.");
     }
     finally
     {
@@ -189,209 +159,125 @@ export default function Clients()
     }
   }
 
-  /*
-   * Catégories disponibles
-   */
   const categories = Array.from(
-    new Set(
-      clients.map(
-        (client) => client.categorie
-      )
-    )
+    new Set(clients.map((client) => client.categorie))
   ).sort();
 
-  /*
-   * Filtrage des clients
-   */
-  const clientsFiltres = clients.filter(
-    (client) =>
-    {
-      const texte = recherche
-        .toLowerCase()
-        .trim();
+  const texteRecherche = recherche.toLowerCase().trim();
 
-      const correspondRecherche =
-        client.nom.toLowerCase().includes(texte) ||
-        client.prenom.toLowerCase().includes(texte) ||
-        client.telephone.includes(texte) ||
-        client.numero_client
-          .toString()
-          .includes(texte);
+  const clientsFiltres = clients.filter((client) =>
+  {
+    const correspondRecherche =
+      client.nom.toLowerCase().includes(texteRecherche) ||
+      client.prenom.toLowerCase().includes(texteRecherche) ||
+      client.telephone.includes(texteRecherche) ||
+      client.numero_client.toString().includes(texteRecherche);
 
-      const correspondCategorie =
-        categoriesSelectionnees.length === 0 ||
-        categoriesSelectionnees.includes(
-          client.categorie
-        );
+    const correspondCategorie =
+      categoriesSelectionnees.length === 0 ||
+      categoriesSelectionnees.includes(client.categorie);
 
-      const correspondSms =
-        filtreSms === "tous" ||
-        (
-          filtreSms === "autorise" &&
-          client.sms_consentement === true
-        ) ||
-        (
-          filtreSms === "non_autorise" &&
-          client.sms_consentement === false
-        );
+    const correspondSms =
+      filtreSms === "tous" ||
+      (filtreSms === "autorise" && client.sms_consentement) ||
+      (filtreSms === "non_autorise" && !client.sms_consentement);
 
-      return (
-        correspondRecherche &&
-        correspondCategorie &&
-        correspondSms
-      );
-    }
-  );
+    return (
+      correspondRecherche &&
+      correspondCategorie &&
+      correspondSms
+    );
+  });
 
-  /*
-   * Sélectionner / désélectionner un client
-   */
   function basculerSelectionClient(id: string)
   {
-    setClientsSelectionnes(
-      (selectionActuelle) =>
-      {
-        if (selectionActuelle.includes(id))
-        {
-          return selectionActuelle.filter(
-            (clientId) => clientId !== id
-          );
-        }
-
-        return [
-          ...selectionActuelle,
-          id
-        ];
-      }
+    setClientsSelectionnes((selection) =>
+      selection.includes(id)
+        ? selection.filter((clientId) => clientId !== id)
+        : [...selection, id]
     );
   }
 
-  /*
-   * Sélectionner tous les clients actuellement affichés
-   */
   function basculerSelectionTous()
   {
-    const idsVisibles =
-      clientsFiltres.map(
-        (client) => client.id
-      );
+    const ids = clientsFiltres.map((client) => client.id);
 
     const tousSelectionnes =
-      idsVisibles.length > 0 &&
-      idsVisibles.every(
-        (id) =>
-          clientsSelectionnes.includes(id)
-      );
+      ids.length > 0 &&
+      ids.every((id) => clientsSelectionnes.includes(id));
 
-    if (tousSelectionnes)
+    setClientsSelectionnes((selection) =>
     {
-      setClientsSelectionnes(
-        (selectionActuelle) =>
-          selectionActuelle.filter(
-            (id) =>
-              !idsVisibles.includes(id)
-          )
-      );
-
-      return;
-    }
-
-    setClientsSelectionnes(
-      (selectionActuelle) =>
+      if (tousSelectionnes)
       {
-        const nouvelleSelection =
-          new Set(selectionActuelle);
-
-        idsVisibles.forEach(
-          (id) =>
-          {
-            nouvelleSelection.add(id);
-          }
-        );
-
-        return Array.from(
-          nouvelleSelection
-        );
+        return selection.filter((id) => !ids.includes(id));
       }
+
+      return Array.from(new Set([...selection, ...ids]));
+    });
+  }
+
+  function basculerCategorie(categorie: string)
+  {
+    setCategoriesSelectionnees((selection) =>
+      selection.includes(categorie)
+        ? selection.filter((item) => item !== categorie)
+        : [...selection, categorie]
     );
   }
 
-  /*
-   * Vérifie si tous les clients affichés
-   * sont sélectionnés.
-   */
   const tousLesClientsVisiblesSelectionnes =
     clientsFiltres.length > 0 &&
-    clientsFiltres.every(
-      (client) =>
-        clientsSelectionnes.includes(
-          client.id
-        )
+    clientsFiltres.every((client) =>
+      clientsSelectionnes.includes(client.id)
     );
 
-  /*
-   * Changer les catégories sélectionnées
-   */
-  function basculerCategorie(
-    categorie: string
-  )
+  function changerVue(nouvelleVue: "clients" | "corbeille")
   {
-    setCategoriesSelectionnees(
-      (categoriesActuelles) =>
-      {
-        if (
-          categoriesActuelles.includes(
-            categorie
-          )
-        )
-        {
-          return categoriesActuelles.filter(
-            (categorieActuelle) =>
-              categorieActuelle !== categorie
-          );
-        }
+    setVue(nouvelleVue);
+    setRecherche("");
+    setErreur("");
+    setClientsSelectionnes([]);
 
-        return [
-          ...categoriesActuelles,
-          categorie
-        ];
-      }
-    );
+    if (nouvelleVue === "corbeille")
+    {
+      setFormulaireOuvert(false);
+    }
   }
 
   if (loading)
   {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-950 text-white">
-
-        <p>
-          Chargement...
-        </p>
-
+      <main className="flex min-h-screen items-center justify-center bg-gray-950 px-4 text-white">
+        <p>Chargement...</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white">
+    <main className="min-h-screen overflow-x-hidden bg-gray-950 text-white">
 
       <div className="flex min-h-screen">
 
         <Sidebar />
 
-        <section className="flex-1 p-6 md:p-10">
+        <section className="min-w-0 flex-1 px-4 py-6 sm:px-6 sm:py-8 md:p-10">
 
-          <header className="mb-8">
+          {/* ========================================================
+              EN-TÊTE
+          ======================================================== */}
 
-            <div className="flex flex-wrap items-center justify-between gap-4">
+          <header className="mb-6 sm:mb-8">
 
-              <div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+              <div className="min-w-0">
 
                 <p className="text-sm text-gray-400">
                   Gestion du salon
                 </p>
 
-                <h1 className="mt-1 text-3xl font-bold">
+                <h1 className="mt-1 break-words text-2xl font-bold sm:text-3xl">
                   {vue === "clients"
                     ? "👥 Clients"
                     : "🗑️ Corbeille"}
@@ -400,9 +286,7 @@ export default function Clients()
                 {vue === "clients" && (
                   <p className="mt-2 text-sm text-gray-400">
                     {clients.length} client
-                    {clients.length !== 1
-                      ? "s"
-                      : ""}
+                    {clients.length !== 1 ? "s" : ""}
                   </p>
                 )}
 
@@ -411,12 +295,9 @@ export default function Clients()
               {vue === "clients" && (
                 <button
                   onClick={() =>
-                  {
-                    setFormulaireOuvert(
-                      !formulaireOuvert
-                    );
-                  }}
-                  className="rounded-lg bg-white px-5 py-3 font-medium text-black hover:opacity-90"
+                    setFormulaireOuvert(!formulaireOuvert)
+                  }
+                  className="w-full rounded-lg bg-white px-5 py-3 font-medium text-black hover:opacity-90 sm:w-auto"
                 >
                   {formulaireOuvert
                     ? "Fermer"
@@ -426,16 +307,13 @@ export default function Clients()
 
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            {/* NAVIGATION CLIENTS / CORBEILLE */}
+
+            <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
 
               <button
-                onClick={() =>
-                {
-                  setVue("clients");
-                  setRecherche("");
-                  setErreur("");
-                }}
-                className={`rounded-lg px-4 py-2 text-sm ${
+                onClick={() => changerVue("clients")}
+                className={`rounded-lg px-4 py-3 text-sm ${
                   vue === "clients"
                     ? "bg-white text-black"
                     : "border border-gray-700 text-gray-300"
@@ -445,51 +323,51 @@ export default function Clients()
               </button>
 
               <button
-                onClick={() =>
-                {
-                  setVue("corbeille");
-                  setFormulaireOuvert(false);
-                  setRecherche("");
-                  setErreur("");
-                  setClientsSelectionnes([]);
-                }}
-                className={`rounded-lg px-4 py-2 text-sm ${
+                onClick={() => changerVue("corbeille")}
+                className={`rounded-lg px-4 py-3 text-sm ${
                   vue === "corbeille"
                     ? "bg-white text-black"
                     : "border border-gray-700 text-gray-300"
                 }`}
               >
                 🗑️ Corbeille
-
                 {corbeille.length > 0 && (
                   <span className="ml-2">
                     {corbeille.length}
                   </span>
                 )}
-
               </button>
 
             </div>
 
           </header>
 
+
+          {/* ========================================================
+              ERREUR
+          ======================================================== */}
+
           {erreur && (
-            <div className="mb-6 rounded-lg border border-red-900 bg-red-950 p-4 text-red-300">
+            <div className="mb-6 rounded-lg border border-red-900 bg-red-950 p-4 text-sm text-red-300">
               {erreur}
             </div>
           )}
+
+
+          {/* ========================================================
+              CLIENTS
+          ======================================================== */}
 
           {vue === "clients" && (
             <>
 
               {formulaireOuvert && (
-                <div className="mb-8 rounded-2xl border border-gray-800 bg-gray-900 p-6">
+                <div className="mb-6 rounded-2xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
 
                   <ClientForm
                     onClientAjoute={async () =>
                     {
                       setFormulaireOuvert(false);
-
                       await chargerClients();
                     }}
                     onFermer={() =>
@@ -501,96 +379,84 @@ export default function Clients()
                 </div>
               )}
 
-              {/* RECHERCHE ET FILTRES */}
 
-              <div className="mb-6 rounded-2xl border border-gray-800 bg-gray-900 p-5">
+              {/* ====================================================
+                  RECHERCHE / FILTRES
+              ==================================================== */}
+
+              <div className="mb-5 rounded-2xl border border-gray-800 bg-gray-900 p-4 sm:p-5">
 
                 <input
                   type="text"
                   value={recherche}
                   onChange={(event) =>
-                  {
-                    setRecherche(
-                      event.target.value
-                    );
-                  }}
+                    setRecherche(event.target.value)
+                  }
                   placeholder="Rechercher un client..."
-                  className="w-full rounded-lg border border-gray-800 bg-gray-950 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:ring-2"
+                  className="w-full rounded-lg border border-gray-800 bg-gray-950 px-4 py-3 text-base text-white outline-none placeholder:text-gray-500 focus:ring-2"
                 />
 
-                <div className="mt-4 flex flex-wrap gap-3">
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
 
-                  <div className="relative">
+                  <details className="relative">
 
-                    <details>
+                    <summary className="cursor-pointer list-none rounded-lg border border-gray-700 px-4 py-3 text-sm text-gray-300">
+                      Catégories
+                      {categoriesSelectionnees.length > 0 && (
+                        <span className="ml-2">
+                          ({categoriesSelectionnees.length})
+                        </span>
+                      )}
+                    </summary>
 
-                      <summary className="cursor-pointer list-none rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
-                        Catégories
-                        {categoriesSelectionnees.length > 0 && (
-                          <span className="ml-2">
-                            ({categoriesSelectionnees.length})
-                          </span>
-                        )}
-                      </summary>
+                    <div className="absolute left-0 z-30 mt-2 w-full min-w-64 max-w-xs rounded-xl border border-gray-700 bg-gray-900 p-3 shadow-xl">
 
-                      <div className="absolute z-20 mt-2 w-64 rounded-xl border border-gray-700 bg-gray-900 p-3 shadow-xl">
+                      {categories.length === 0 ? (
+                        <p className="text-sm text-gray-500">
+                          Aucune catégorie
+                        </p>
+                      ) : (
+                        categories.map((categorie) => (
+                          <label
+                            key={categorie}
+                            className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-800"
+                          >
 
-                        {categories.length === 0 ? (
-                          <p className="text-sm text-gray-500">
-                            Aucune catégorie
-                          </p>
-                        ) : (
-                          categories.map(
-                            (categorie) =>
-                            (
-                              <label
-                                key={categorie}
-                                className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-800"
-                              >
+                            <input
+                              type="checkbox"
+                              checked={categoriesSelectionnees.includes(
+                                categorie
+                              )}
+                              onChange={() =>
+                                basculerCategorie(categorie)
+                              }
+                              className="h-5 w-5"
+                            />
 
-                                <input
-                                  type="checkbox"
-                                  checked={categoriesSelectionnees.includes(
-                                    categorie
-                                  )}
-                                  onChange={() =>
-                                  {
-                                    basculerCategorie(
-                                      categorie
-                                    );
-                                  }}
-                                  className="h-4 w-4"
-                                />
+                            <span className="text-sm">
+                              {categorie}
+                            </span>
 
-                                <span className="text-sm">
-                                  {categorie}
-                                </span>
+                          </label>
+                        ))
+                      )}
 
-                              </label>
-                            )
-                          )
-                        )}
+                    </div>
 
-                      </div>
-
-                    </details>
-
-                  </div>
+                  </details>
 
                   <select
                     value={filtreSms}
                     onChange={(event) =>
-                    {
                       setFiltreSms(
                         event.target.value as
-                        | "tous"
-                        | "autorise"
-                        | "non_autorise"
-                      );
-                    }}
-                    className="rounded-lg border border-gray-700 bg-gray-950 px-4 py-2 text-sm text-gray-300 outline-none"
+                          | "tous"
+                          | "autorise"
+                          | "non_autorise"
+                      )
+                    }
+                    className="min-h-11 rounded-lg border border-gray-700 bg-gray-950 px-4 py-3 text-sm text-gray-300 outline-none"
                   >
-
                     <option value="tous">
                       Tous les SMS
                     </option>
@@ -602,7 +468,6 @@ export default function Clients()
                     <option value="non_autorise">
                       SMS non autorisé
                     </option>
-
                   </select>
 
                   {(categoriesSelectionnees.length > 0 ||
@@ -615,7 +480,7 @@ export default function Clients()
                         setCategoriesSelectionnees([]);
                         setFiltreSms("tous");
                       }}
-                      className="rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white"
+                      className="min-h-11 rounded-lg border border-gray-700 px-4 py-3 text-sm text-gray-400 hover:bg-gray-800 hover:text-white"
                     >
                       Réinitialiser
                     </button>
@@ -625,33 +490,144 @@ export default function Clients()
 
               </div>
 
-              <div className="mb-4 flex items-center justify-between">
+
+              {/* ====================================================
+                  COMPTEUR
+              ==================================================== */}
+
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
 
                 <p className="text-sm text-gray-400">
                   {clientsFiltres.length} client
-                  {clientsFiltres.length !== 1
-                    ? "s"
-                    : ""}
-                  affiché
-                  {clientsFiltres.length !== 1
-                    ? "s"
-                    : ""}
+                  {clientsFiltres.length !== 1 ? "s" : ""}
+                  {" "}affiché
+                  {clientsFiltres.length !== 1 ? "s" : ""}
                 </p>
 
                 {clientsSelectionnes.length > 0 && (
                   <p className="text-sm text-gray-300">
                     {clientsSelectionnes.length} sélectionné
-                    {clientsSelectionnes.length !== 1
-                      ? "s"
-                      : ""}
+                    {clientsSelectionnes.length !== 1 ? "s" : ""}
                   </p>
                 )}
 
               </div>
 
-              {/* LISTE DES CLIENTS */}
 
-              <div className="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900">
+              {/* ====================================================
+                  LISTE MOBILE
+              ==================================================== */}
+
+              <div className="space-y-3 md:hidden">
+
+                {clientsFiltres.length === 0 ? (
+                  <div className="rounded-2xl border border-gray-800 bg-gray-900 p-8 text-center">
+
+                    <div className="text-5xl">
+                      👥
+                    </div>
+
+                    <h2 className="mt-4 text-lg font-semibold">
+                      Aucun client trouvé
+                    </h2>
+
+                    <p className="mt-2 text-sm text-gray-400">
+                      Essayez de modifier votre recherche ou vos filtres.
+                    </p>
+
+                  </div>
+                ) : (
+                  clientsFiltres.map((client) =>
+                  {
+                    const selectionne =
+                      clientsSelectionnes.includes(client.id);
+
+                    return (
+                      <div
+                        key={client.id}
+                        className={`rounded-2xl border bg-gray-900 p-4 ${
+                          selectionne
+                            ? "border-gray-500"
+                            : "border-gray-800"
+                        }`}
+                      >
+
+                        <div className="flex items-start gap-3">
+
+                          <input
+                            type="checkbox"
+                            checked={selectionne}
+                            onChange={() =>
+                              basculerSelectionClient(client.id)
+                            }
+                            className="mt-1 h-5 w-5 shrink-0"
+                          />
+
+                          <button
+                            onClick={() =>
+                              router.push(`/clients/${client.id}`)
+                            }
+                            className="min-w-0 flex-1 text-left"
+                          >
+
+                            <div className="flex items-start justify-between gap-3">
+
+                              <div className="min-w-0">
+
+                                <p className="break-words font-semibold">
+                                  {client.prenom}{" "}
+                                  {client.nom}
+                                </p>
+
+                                <p className="mt-1 text-xs text-gray-500">
+                                  Client #{client.numero_client}
+                                </p>
+
+                              </div>
+
+                              <span className="shrink-0 rounded-full bg-gray-800 px-2.5 py-1 text-xs text-gray-300">
+                                {client.categorie}
+                              </span>
+
+                            </div>
+
+                            <p className="mt-3 break-all text-sm text-gray-300">
+                              {client.telephone}
+                            </p>
+
+                            {client.email && (
+                              <p className="mt-1 break-all text-sm text-gray-500">
+                                {client.email}
+                              </p>
+                            )}
+
+                            {client.sms_consentement ? (
+                              <span className="mt-3 inline-flex rounded-full bg-green-950 px-2.5 py-1 text-xs text-green-400">
+                                ✓ SMS autorisé
+                              </span>
+                            ) : (
+                              <span className="mt-3 inline-flex rounded-full bg-gray-800 px-2.5 py-1 text-xs text-gray-500">
+                                ✕ SMS non autorisé
+                              </span>
+                            )}
+
+                          </button>
+
+                        </div>
+
+                      </div>
+                    );
+                  })
+                )}
+
+              </div>
+
+
+              {/* ====================================================
+                  TABLEAU TABLETTE / PC
+              ==================================================== */}
+
+              <div className="hidden overflow-hidden rounded-2xl border border-gray-800 bg-gray-900 md:block">
 
                 {clientsFiltres.length === 0 ? (
                   <div className="p-10 text-center">
@@ -672,7 +648,7 @@ export default function Clients()
                 ) : (
                   <div className="overflow-x-auto">
 
-                    <table className="w-full text-left">
+                    <table className="w-full min-w-[720px] text-left">
 
                       <thead className="border-b border-gray-800 bg-gray-950">
 
@@ -685,9 +661,7 @@ export default function Clients()
                               checked={
                                 tousLesClientsVisiblesSelectionnes
                               }
-                              onChange={
-                                basculerSelectionTous
-                              }
+                              onChange={basculerSelectionTous}
                               className="h-4 w-4"
                               title="Sélectionner tous les clients affichés"
                             />
@@ -716,94 +690,84 @@ export default function Clients()
 
                       <tbody>
 
-                        {clientsFiltres.map(
-                          (client) =>
-                          (
-                            <tr
-                              key={client.id}
-                              className={`border-b border-gray-800 last:border-0 hover:bg-gray-800/50 ${
-                                clientsSelectionnes.includes(
+                        {clientsFiltres.map((client) =>
+                        (
+                          <tr
+                            key={client.id}
+                            className={`border-b border-gray-800 last:border-0 hover:bg-gray-800/50 ${
+                              clientsSelectionnes.includes(client.id)
+                                ? "bg-gray-800/70"
+                                : ""
+                            }`}
+                          >
+
+                            <td className="px-5 py-4">
+
+                              <input
+                                type="checkbox"
+                                checked={clientsSelectionnes.includes(
                                   client.id
-                                )
-                                  ? "bg-gray-800/70"
-                                  : ""
-                              }`}
-                            >
-
-                              <td className="px-5 py-4">
-
-                                <input
-                                  type="checkbox"
-                                  checked={clientsSelectionnes.includes(
-                                    client.id
-                                  )}
-                                  onChange={() =>
-                                  {
-                                    basculerSelectionClient(
-                                      client.id
-                                    );
-                                  }}
-                                  className="h-4 w-4"
-                                />
-
-                              </td>
-
-                              <td className="px-5 py-4 font-mono text-gray-400">
-                                #{client.numero_client}
-                              </td>
-
-                              <td className="px-5 py-4">
-
-                                <button
-                                  onClick={() =>
-                                  {
-                                    router.push(
-                                      `/clients/${client.id}`
-                                    );
-                                  }}
-                                  className="text-left font-medium hover:underline"
-                                >
-                                  {client.prenom}{" "}
-                                  {client.nom}
-                                </button>
-
-                                {client.email && (
-                                  <p className="mt-1 text-sm text-gray-500">
-                                    {client.email}
-                                  </p>
                                 )}
+                                onChange={() =>
+                                  basculerSelectionClient(client.id)
+                                }
+                                className="h-4 w-4"
+                              />
 
-                              </td>
+                            </td>
 
-                              <td className="px-5 py-4">
+                            <td className="px-5 py-4 font-mono text-gray-400">
+                              #{client.numero_client}
+                            </td>
 
-                                <p className="text-gray-300">
-                                  {client.telephone}
+                            <td className="px-5 py-4">
+
+                              <button
+                                onClick={() =>
+                                  router.push(`/clients/${client.id}`)
+                                }
+                                className="text-left font-medium hover:underline"
+                              >
+                                {client.prenom}{" "}
+                                {client.nom}
+                              </button>
+
+                              {client.email && (
+                                <p className="mt-1 text-sm text-gray-500">
+                                  {client.email}
                                 </p>
+                              )}
 
-                                {client.sms_consentement ? (
-                                  <span className="mt-1 inline-flex rounded-full bg-green-950 px-2 py-1 text-xs text-green-400">
-                                    ✓ SMS autorisé
-                                  </span>
-                                ) : (
-                                  <span className="mt-1 inline-flex rounded-full bg-gray-800 px-2 py-1 text-xs text-gray-500">
-                                    ✕ SMS non autorisé
-                                  </span>
-                                )}
+                            </td>
 
-                              </td>
+                            <td className="px-5 py-4">
 
-                              <td className="px-5 py-4">
+                              <p className="text-gray-300">
+                                {client.telephone}
+                              </p>
 
-                                <span className="rounded-full bg-gray-800 px-3 py-1 text-sm text-gray-300">
-                                  {client.categorie}
+                              {client.sms_consentement ? (
+                                <span className="mt-1 inline-flex rounded-full bg-green-950 px-2 py-1 text-xs text-green-400">
+                                  ✓ SMS autorisé
                                 </span>
+                              ) : (
+                                <span className="mt-1 inline-flex rounded-full bg-gray-800 px-2 py-1 text-xs text-gray-500">
+                                  ✕ SMS non autorisé
+                                </span>
+                              )}
 
-                              </td>
+                            </td>
 
-                            </tr>
-                          )
-                        )}
+                            <td className="px-5 py-4">
+
+                              <span className="rounded-full bg-gray-800 px-3 py-1 text-sm text-gray-300">
+                                {client.categorie}
+                              </span>
+
+                            </td>
+
+                          </tr>
+                        ))}
 
                       </tbody>
 
@@ -817,31 +781,32 @@ export default function Clients()
             </>
           )}
 
-          {/* CORBEILLE */}
+
+          {/* ========================================================
+              CORBEILLE
+          ======================================================== */}
 
           {vue === "corbeille" && (
             <>
 
-              <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-gray-800 bg-gray-900 p-5 md:flex-row md:items-center md:justify-between">
+              <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-gray-800 bg-gray-900 p-4 sm:p-5 md:flex-row md:items-center md:justify-between">
 
-                <div>
+                <div className="min-w-0">
 
                   <h2 className="font-semibold">
                     Gestion de la corbeille
                   </h2>
 
-                  <p className="mt-1 text-sm text-gray-400">
+                  <p className="mt-1 text-sm leading-5 text-gray-400">
                     Les clients restent récupérables jusqu'à leur suppression définitive.
                   </p>
 
                 </div>
 
                 <button
-                  onClick={
-                    supprimerAnciensClients
-                  }
+                  onClick={supprimerAnciensClients}
                   disabled={suppression}
-                  className="rounded-lg border border-red-800 px-4 py-2 text-sm text-red-400 hover:bg-red-950 disabled:opacity-50"
+                  className="w-full rounded-lg border border-red-800 px-4 py-3 text-sm text-red-400 hover:bg-red-950 disabled:opacity-50 md:w-auto"
                 >
                   {suppression
                     ? "Suppression..."
@@ -850,20 +815,21 @@ export default function Clients()
 
               </div>
 
+
               <div className="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900">
 
                 {corbeille.length === 0 ? (
-                  <div className="p-10 text-center">
+                  <div className="p-8 text-center sm:p-10">
 
                     <div className="text-5xl">
                       🗑️
                     </div>
 
-                    <h2 className="mt-4 text-xl font-semibold">
+                    <h2 className="mt-4 text-lg font-semibold sm:text-xl">
                       Corbeille vide
                     </h2>
 
-                    <p className="mt-2 text-gray-400">
+                    <p className="mt-2 text-sm text-gray-400">
                       Aucun client dans la corbeille.
                     </p>
 
@@ -871,69 +837,59 @@ export default function Clients()
                 ) : (
                   <div className="divide-y divide-gray-800">
 
-                    {corbeille.map(
-                      (client) =>
-                      (
-                        <div
-                          key={client.id}
-                          className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between"
-                        >
+                    {corbeille.map((client) =>
+                    (
+                      <div
+                        key={client.id}
+                        className="flex flex-col gap-4 p-4 sm:p-5 md:flex-row md:items-center md:justify-between"
+                      >
 
-                          <div>
+                        <div className="min-w-0">
 
-                            <p className="font-medium">
-                              {client.prenom}{" "}
-                              {client.nom}
+                          <p className="break-words font-medium">
+                            {client.prenom}{" "}
+                            {client.nom}
+                          </p>
+
+                          <p className="mt-1 text-sm text-gray-500">
+                            Client #{client.numero_client}
+                          </p>
+
+                          {client.date_suppression && (
+                            <p className="mt-1 text-sm text-gray-400">
+                              Supprimé le{" "}
+                              {new Date(
+                                client.date_suppression
+                              ).toLocaleDateString("fr-FR")}
                             </p>
-
-                            <p className="mt-1 text-sm text-gray-500">
-                              Client #{client.numero_client}
-                            </p>
-
-                            {client.date_suppression && (
-                              <p className="mt-1 text-sm text-gray-400">
-                                Supprimé le{" "}
-                                {new Date(
-                                  client.date_suppression
-                                ).toLocaleDateString(
-                                  "fr-FR"
-                                )}
-                              </p>
-                            )}
-
-                          </div>
-
-                          <div className="flex flex-wrap gap-3">
-
-                            <button
-                              onClick={() =>
-                              {
-                                restaurer(
-                                  client.id
-                                );
-                              }}
-                              className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:opacity-90"
-                            >
-                              Restaurer
-                            </button>
-
-                            <button
-                              onClick={() =>
-                              {
-                                supprimerDefinitivement(
-                                  client
-                                );
-                              }}
-                              className="rounded-lg border border-red-800 px-4 py-2 text-sm text-red-400 hover:bg-red-950"
-                            >
-                              Supprimer définitivement
-                            </button>
-
-                          </div>
+                          )}
 
                         </div>
-                      )
-                    )}
+
+                        <div className="grid grid-cols-1 gap-2 sm:flex">
+
+                          <button
+                            onClick={() =>
+                              restaurer(client.id)
+                            }
+                            className="min-h-11 rounded-lg bg-white px-4 py-3 text-sm font-medium text-black hover:opacity-90"
+                          >
+                            Restaurer
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              supprimerDefinitivement(client)
+                            }
+                            className="min-h-11 rounded-lg border border-red-800 px-4 py-3 text-sm text-red-400 hover:bg-red-950"
+                          >
+                            Supprimer définitivement
+                          </button>
+
+                        </div>
+
+                      </div>
+                    ))}
 
                   </div>
                 )}
@@ -947,27 +903,24 @@ export default function Clients()
 
       </div>
 
-      {/* BULLE SMS */}
+
+      {/* ============================================================
+          BULLE SMS
+      ============================================================ */}
 
       {vue === "clients" &&
         clientsSelectionnes.length > 0 && (
-          <div className="fixed bottom-6 right-6 z-40">
+          <div className="fixed bottom-4 left-4 right-4 z-40 sm:left-auto sm:right-6">
 
             <button
               onClick={() =>
               {
-                /*
-                 * Pour le moment, on ne fait rien.
-                 *
-                 * Cette action sera reliée plus tard
-                 * au système d'envoi de SMS.
-                 */
                 console.log(
                   "Clients sélectionnés :",
                   clientsSelectionnes
                 );
               }}
-              className="flex items-center gap-3 rounded-full bg-white px-6 py-4 font-semibold text-black shadow-2xl hover:scale-105"
+              className="flex min-h-14 w-full items-center justify-center gap-3 rounded-full bg-white px-5 py-3 font-semibold text-black shadow-2xl sm:w-auto sm:px-6 sm:py-4"
             >
 
               <span className="text-xl">
