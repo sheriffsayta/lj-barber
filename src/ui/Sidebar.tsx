@@ -85,6 +85,16 @@ export default function Sidebar()
 
 
   // ============================================================
+  // FERMER LE MENU
+  // ============================================================
+
+  function fermerMenu()
+  {
+    setMenuOuvert(false);
+  }
+
+
+  // ============================================================
   // DECONNEXION
   // ============================================================
 
@@ -93,16 +103,6 @@ export default function Sidebar()
     await supabase.auth.signOut();
 
     window.location.href = "/";
-  }
-
-
-  // ============================================================
-  // FERMER LE MENU
-  // ============================================================
-
-  function fermerMenu()
-  {
-    setMenuOuvert(false);
   }
 
 
@@ -124,7 +124,7 @@ export default function Sidebar()
 
 
   // ============================================================
-  // STYLE DES LIENS
+  // STYLE LIEN
   // ============================================================
 
   function classeLien(
@@ -141,24 +141,13 @@ export default function Sidebar()
     <>
 
       {/* ========================================================
-          IPHONE + IPAD
-          MENU MOBILE / TABLETTE
+          BARRE DU HAUT
+          TOUS LES APPAREILS
       ======================================================== */}
 
-      <header className="sticky top-0 z-50 border-b border-gray-800 bg-gray-900/95 backdrop-blur lg:hidden">
+      <header className="fixed left-0 right-0 top-0 z-40 h-16 border-b border-gray-800 bg-gray-900/95 backdrop-blur">
 
-        {/* BARRE DU HAUT */}
-
-        <div className="flex min-h-16 items-center justify-between px-4 sm:px-6">
-
-          <Link
-            href="/dashboard"
-            onClick={fermerMenu}
-            className="text-lg font-bold text-white sm:text-xl"
-          >
-            ✂️ LJ BARBER
-          </Link>
-
+        <div className="flex h-full items-center px-4 sm:px-6">
 
           {/* BOUTON MENU */}
 
@@ -170,7 +159,7 @@ export default function Sidebar()
                 (ouvert) => !ouvert
               );
             }}
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-700 text-xl text-white active:bg-gray-800"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-700 text-xl text-white hover:bg-gray-800 active:bg-gray-700"
             aria-label={
               menuOuvert
                 ? "Fermer le menu"
@@ -183,121 +172,85 @@ export default function Sidebar()
               : "☰"}
           </button>
 
+
+          {/* LOGO */}
+
+          <Link
+            href="/dashboard"
+            onClick={fermerMenu}
+            className="ml-3 text-lg font-bold text-white sm:text-xl"
+          >
+            ✂️ LJ BARBER
+          </Link>
+
         </div>
-
-
-        {/* ======================================================
-            MENU OUVERT
-            POSITIONNE PAR-DESSUS LA PAGE
-        ====================================================== */}
-
-        {menuOuvert && (
-          <div className="absolute left-0 right-0 top-full border-t border-gray-800 bg-gray-900 px-4 pb-4 pt-3 shadow-xl sm:px-6">
-
-            <nav className="space-y-2">
-
-              {/* ACCUEIL / CLIENTS / SMS */}
-
-              {liens.map(
-                (lien) =>
-                (
-                  <Link
-                    key={lien.href}
-                    href={lien.href}
-                    onClick={fermerMenu}
-                    className={classeLien(
-                      lien.href
-                    )}
-                  >
-
-                    <span className="text-lg">
-                      {lien.emoji}
-                    </span>
-
-                    <span>
-                      {lien.nom}
-                    </span>
-
-                  </Link>
-                )
-              )}
-
-
-              {/* ADMINISTRATION */}
-
-              {role === "ADMIN" && (
-                <Link
-                  href="/administration"
-                  onClick={fermerMenu}
-                  className={classeLien(
-                    "/administration"
-                  )}
-                >
-
-                  <span className="text-lg">
-                    🔐
-                  </span>
-
-                  <span>
-                    Administration
-                  </span>
-
-                </Link>
-              )}
-
-
-              {/* DECONNEXION */}
-
-              <button
-                type="button"
-                onClick={seDeconnecter}
-                className="mt-4 flex min-h-12 w-full items-center gap-3 rounded-xl border border-gray-700 px-4 py-3 text-left text-gray-300 active:bg-gray-800"
-              >
-
-                <span className="text-lg">
-                  🚪
-                </span>
-
-                <span>
-                  Déconnexion
-                </span>
-
-              </button>
-
-            </nav>
-
-          </div>
-        )}
 
       </header>
 
 
       {/* ========================================================
-          ORDINATEUR
-          SIDEBAR FIXE
+          FOND SOMBRE
+          APPARAIT QUAND LE MENU EST OUVERT
       ======================================================== */}
 
-      <aside className="hidden min-h-screen w-64 shrink-0 border-r border-gray-800 bg-gray-900 p-5 lg:flex lg:flex-col">
+      {menuOuvert && (
+        <button
+          type="button"
+          aria-label="Fermer le menu"
+          onClick={fermerMenu}
+          className="fixed inset-0 z-40 bg-black/60"
+        />
+      )}
 
-        {/* LOGO */}
 
-        <div className="mb-8">
+      {/* ========================================================
+          SIDEBAR
+          TOUS LES APPAREILS
+      ======================================================== */}
+
+      <aside
+        className={
+          "fixed bottom-0 left-0 top-0 z-50 flex w-[min(86vw,320px)] flex-col border-r border-gray-800 bg-gray-900 p-5 shadow-2xl transition-transform duration-200 ease-out " +
+          (
+            menuOuvert
+              ? "translate-x-0"
+              : "-translate-x-full"
+          )
+        }
+      >
+
+        {/* ======================================================
+            ENTETE SIDEBAR
+        ====================================================== */}
+
+        <div className="mb-8 flex items-center justify-between">
 
           <Link
             href="/dashboard"
-            className="text-2xl font-bold text-white"
+            onClick={fermerMenu}
+            className="text-xl font-bold text-white"
           >
             ✂️ LJ BARBER
           </Link>
 
-          <p className="mt-1 text-sm text-gray-400">
-            Espace professionnel
-          </p>
+
+          {/* FERMER */}
+
+          <button
+            type="button"
+            onClick={fermerMenu}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-700 text-lg text-white hover:bg-gray-800"
+            aria-label="Fermer le menu"
+          >
+            ✕
+          </button>
 
         </div>
 
 
-        {/* NAVIGATION */}
+        {/* ======================================================
+            NAVIGATION
+        ====================================================== */}
 
         <nav className="space-y-2">
 
@@ -307,6 +260,7 @@ export default function Sidebar()
               <Link
                 key={lien.href}
                 href={lien.href}
+                onClick={fermerMenu}
                 className={classeLien(
                   lien.href
                 )}
@@ -330,6 +284,7 @@ export default function Sidebar()
           {role === "ADMIN" && (
             <Link
               href="/administration"
+              onClick={fermerMenu}
               className={classeLien(
                 "/administration"
               )}
@@ -349,12 +304,14 @@ export default function Sidebar()
         </nav>
 
 
-        {/* DECONNEXION */}
+        {/* ======================================================
+            DECONNEXION
+        ====================================================== */}
 
         <button
           type="button"
           onClick={seDeconnecter}
-          className="mt-auto flex min-h-12 w-full items-center gap-3 rounded-xl border border-gray-700 px-4 py-3 text-left text-gray-300 hover:bg-gray-800"
+          className="mt-auto flex min-h-12 w-full items-center gap-3 rounded-xl border border-gray-700 px-4 py-3 text-left text-gray-300 hover:bg-gray-800 active:bg-gray-700"
         >
 
           <span className="text-lg">
