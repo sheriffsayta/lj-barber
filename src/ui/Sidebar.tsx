@@ -29,8 +29,16 @@ export default function Sidebar()
 {
   const pathname = usePathname();
 
-  const [role, setRole] = useState<Role | null>(null);
-  const [menuOuvert, setMenuOuvert] = useState(false);
+  const [role, setRole] =
+    useState<Role | null>(null);
+
+  const [menuOuvert, setMenuOuvert] =
+    useState(false);
+
+
+  // ============================================================
+  // CHARGER LE ROLE
+  // ============================================================
 
   useEffect(() =>
   {
@@ -75,6 +83,11 @@ export default function Sidebar()
     chargerRole();
   }, []);
 
+
+  // ============================================================
+  // DECONNEXION
+  // ============================================================
+
   async function seDeconnecter()
   {
     await supabase.auth.signOut();
@@ -82,12 +95,24 @@ export default function Sidebar()
     window.location.href = "/";
   }
 
+
+  // ============================================================
+  // FERMER LE MENU
+  // ============================================================
+
   function fermerMenu()
   {
     setMenuOuvert(false);
   }
 
-  function lienEstActif(href: string)
+
+  // ============================================================
+  // LIEN ACTIF
+  // ============================================================
+
+  function lienEstActif(
+    href: string
+  )
   {
     if (href === "/dashboard")
     {
@@ -97,22 +122,32 @@ export default function Sidebar()
     return pathname.startsWith(href);
   }
 
-  function classeLien(href: string)
+
+  // ============================================================
+  // STYLE LIEN
+  // ============================================================
+
+  function classeLien(
+    href: string
+  )
   {
     return lienEstActif(href)
       ? "flex min-h-12 items-center gap-3 rounded-xl bg-gray-800 px-4 py-3 font-medium text-white"
       : "flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-gray-300 hover:bg-gray-800";
   }
 
+
   return (
     <>
-      {/* ============================================================
-          MOBILE
-      ============================================================ */}
 
-      <header className="sticky top-0 z-50 border-b border-gray-800 bg-gray-900/95 backdrop-blur md:hidden">
+      {/* ========================================================
+          MOBILE + TABLETTE
+          IPHONE + IPAD PORTRAIT + IPAD PAYSAGE
+      ======================================================== */}
 
-        <div className="flex min-h-16 items-center justify-between px-4">
+      <header className="sticky top-0 z-50 border-b border-gray-800 bg-gray-900/95 backdrop-blur lg:hidden">
+
+        <div className="flex min-h-16 items-center justify-between px-4 sm:px-6">
 
           <Link
             href="/dashboard"
@@ -121,6 +156,7 @@ export default function Sidebar()
           >
             ✂️ LJ BARBER
           </Link>
+
 
           <button
             type="button"
@@ -136,15 +172,22 @@ export default function Sidebar()
                 ? "Fermer le menu"
                 : "Ouvrir le menu"
             }
+            aria-expanded={menuOuvert}
           >
-            {menuOuvert ? "✕" : "☰"}
+            {menuOuvert
+              ? "✕"
+              : "☰"}
           </button>
 
         </div>
 
 
+        {/* ======================================================
+            MENU OUVERT
+        ====================================================== */}
+
         {menuOuvert && (
-          <div className="border-t border-gray-800 bg-gray-900 px-4 pb-4 pt-3">
+          <div className="border-t border-gray-800 bg-gray-900 px-4 pb-4 pt-3 sm:px-6">
 
             <nav className="space-y-2">
 
@@ -155,8 +198,11 @@ export default function Sidebar()
                     key={lien.href}
                     href={lien.href}
                     onClick={fermerMenu}
-                    className={classeLien(lien.href)}
+                    className={classeLien(
+                      lien.href
+                    )}
                   >
+
                     <span className="text-lg">
                       {lien.emoji}
                     </span>
@@ -164,10 +210,13 @@ export default function Sidebar()
                     <span>
                       {lien.nom}
                     </span>
+
                   </Link>
                 )
               )}
 
+
+              {/* ADMINISTRATION */}
 
               {role === "ADMIN" && (
                 <Link
@@ -177,6 +226,7 @@ export default function Sidebar()
                     "/administration"
                   )}
                 >
+
                   <span className="text-lg">
                     🔐
                   </span>
@@ -184,15 +234,19 @@ export default function Sidebar()
                   <span>
                     Administration
                   </span>
+
                 </Link>
               )}
 
+
+              {/* DECONNEXION */}
 
               <button
                 type="button"
                 onClick={seDeconnecter}
                 className="mt-4 flex min-h-12 w-full items-center gap-3 rounded-xl border border-gray-700 px-4 py-3 text-left text-gray-300 active:bg-gray-800"
               >
+
                 <span className="text-lg">
                   🚪
                 </span>
@@ -200,6 +254,7 @@ export default function Sidebar()
                 <span>
                   Déconnexion
                 </span>
+
               </button>
 
             </nav>
@@ -210,11 +265,14 @@ export default function Sidebar()
       </header>
 
 
-      {/* ============================================================
-          DESKTOP
-      ============================================================ */}
+      {/* ========================================================
+          ORDINATEUR UNIQUEMENT
+          A PARTIR DE LG
+      ======================================================== */}
 
-      <aside className="fixed left-0 top-0 hidden h-screen w-64 border-r border-gray-800 bg-gray-900 p-5 md:flex md:flex-col">
+      <aside className="hidden min-h-screen w-64 shrink-0 border-r border-gray-800 bg-gray-900 p-5 lg:flex lg:flex-col">
+
+        {/* LOGO */}
 
         <div className="mb-8">
 
@@ -232,6 +290,8 @@ export default function Sidebar()
         </div>
 
 
+        {/* NAVIGATION */}
+
         <nav className="space-y-2">
 
           {liens.map(
@@ -240,8 +300,11 @@ export default function Sidebar()
               <Link
                 key={lien.href}
                 href={lien.href}
-                className={classeLien(lien.href)}
+                className={classeLien(
+                  lien.href
+                )}
               >
+
                 <span className="text-lg">
                   {lien.emoji}
                 </span>
@@ -249,10 +312,13 @@ export default function Sidebar()
                 <span>
                   {lien.nom}
                 </span>
+
               </Link>
             )
           )}
 
+
+          {/* ADMINISTRATION */}
 
           {role === "ADMIN" && (
             <Link
@@ -261,6 +327,7 @@ export default function Sidebar()
                 "/administration"
               )}
             >
+
               <span className="text-lg">
                 🔐
               </span>
@@ -268,17 +335,21 @@ export default function Sidebar()
               <span>
                 Administration
               </span>
+
             </Link>
           )}
 
         </nav>
 
 
+        {/* DECONNEXION */}
+
         <button
           type="button"
           onClick={seDeconnecter}
           className="mt-auto flex min-h-12 w-full items-center gap-3 rounded-xl border border-gray-700 px-4 py-3 text-left text-gray-300 hover:bg-gray-800"
         >
+
           <span className="text-lg">
             🚪
           </span>
@@ -286,9 +357,11 @@ export default function Sidebar()
           <span>
             Déconnexion
           </span>
+
         </button>
 
       </aside>
+
     </>
   );
 }
