@@ -124,7 +124,7 @@ export default function Sidebar()
 
 
   // ============================================================
-  // STYLE LIEN
+  // STYLE DES LIENS
   // ============================================================
 
   function classeLien(
@@ -141,11 +141,13 @@ export default function Sidebar()
     <>
 
       {/* ========================================================
-          MOBILE + TABLETTE
-          IPHONE + IPAD PORTRAIT + IPAD PAYSAGE
+          IPHONE + IPAD
+          MENU MOBILE / TABLETTE
       ======================================================== */}
 
       <header className="sticky top-0 z-50 border-b border-gray-800 bg-gray-900/95 backdrop-blur lg:hidden">
+
+        {/* BARRE DU HAUT */}
 
         <div className="flex min-h-16 items-center justify-between px-4 sm:px-6">
 
@@ -157,6 +159,8 @@ export default function Sidebar()
             ✂️ LJ BARBER
           </Link>
 
+
+          {/* BOUTON MENU */}
 
           <button
             type="button"
@@ -184,12 +188,15 @@ export default function Sidebar()
 
         {/* ======================================================
             MENU OUVERT
+            POSITIONNE PAR-DESSUS LA PAGE
         ====================================================== */}
 
         {menuOuvert && (
-          <div className="border-t border-gray-800 bg-gray-900 px-4 pb-4 pt-3 sm:px-6">
+          <div className="absolute left-0 right-0 top-full border-t border-gray-800 bg-gray-900 px-4 pb-4 pt-3 shadow-xl sm:px-6">
 
             <nav className="space-y-2">
+
+              {/* ACCUEIL / CLIENTS / SMS */}
 
               {liens.map(
                 (lien) =>
@@ -266,8 +273,8 @@ export default function Sidebar()
 
 
       {/* ========================================================
-          ORDINATEUR UNIQUEMENT
-          A PARTIR DE LG
+          ORDINATEUR
+          SIDEBAR FIXE
       ======================================================== */}
 
       <aside className="hidden min-h-screen w-64 shrink-0 border-r border-gray-800 bg-gray-900 p-5 lg:flex lg:flex-col">
