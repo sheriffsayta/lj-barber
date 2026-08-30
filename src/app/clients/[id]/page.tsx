@@ -14,11 +14,10 @@ import {
   supprimerPrestation,
   mettreClientCorbeille,
   type Client,
-  type Prestation
+  type Prestation,
 } from "@/lib/clients";
 
-export default function FicheClient()
-{
+export default function FicheClient() {
   const params = useParams();
   const router = useRouter();
 
@@ -37,10 +36,8 @@ export default function FicheClient()
   const [suppression, setSuppression] = useState(false);
   const [erreur, setErreur] = useState("");
 
-  async function chargerClient()
-  {
-    try
-    {
+  async function chargerClient() {
+    try {
       const id = params.id as string;
 
       const data = await recupererClient(id);
@@ -48,84 +45,57 @@ export default function FicheClient()
 
       setClient(data);
       setPrestations(prestationsData);
-    }
-    catch (error)
-    {
+    } catch (error) {
       console.error(error);
 
-      setErreur(
-        "Impossible de récupérer le client."
-      );
-    }
-    finally
-    {
+      setErreur("Impossible de récupérer le client.");
+    } finally {
       setLoading(false);
     }
   }
 
-  function dateAujourdhui()
-  {
-    return new Date()
-      .toISOString()
-      .split("T")[0];
+  function dateAujourdhui() {
+    return new Date().toISOString().split("T")[0];
   }
 
-  function ouvrirAjoutPrestation()
-  {
+  function ouvrirAjoutPrestation() {
     setDatePrestation(dateAujourdhui());
     setAjoutPrestation(true);
     setErreur("");
   }
 
-  async function validerPrestation()
-  {
-    if (!client || !datePrestation)
-    {
+  async function validerPrestation() {
+    if (!client || !datePrestation) {
       return;
     }
 
-    try
-    {
+    try {
       setErreur("");
 
-      await ajouterPrestation(
-        client.id,
-        datePrestation
-      );
+      await ajouterPrestation(client.id, datePrestation);
 
-      const data = await recupererPrestations(
-        client.id
-      );
+      const data = await recupererPrestations(client.id);
 
       setPrestations(data);
       setAjoutPrestation(false);
-    }
-    catch (error)
-    {
+    } catch (error) {
       console.error(error);
 
-      setErreur(
-        "Impossible d'ajouter la prestation."
-      );
+      setErreur("Impossible d'ajouter la prestation.");
     }
   }
 
-  async function modifierDatePrestation(
-    prestation: Prestation
-  )
-  {
+  async function modifierDatePrestation(prestation: Prestation) {
     const nouvelleDate = window.prompt(
       "Nouvelle date de la prestation :",
       prestation.date_prestation
     );
 
-    if (!nouvelleDate)
-    {
+    if (!nouvelleDate) {
       return;
     }
 
-    try
-    {
+    try {
       setPrestationEnCours(prestation.id);
       setErreur("");
 
@@ -139,84 +109,59 @@ export default function FicheClient()
       );
 
       setPrestations(data);
-    }
-    catch (error)
-    {
+    } catch (error) {
       console.error(error);
 
-      setErreur(
-        "Impossible de modifier la prestation."
-      );
-    }
-    finally
-    {
+      setErreur("Impossible de modifier la prestation.");
+    } finally {
       setPrestationEnCours(null);
     }
   }
 
   async function supprimerUnePrestation(
     prestation: Prestation
-  )
-  {
+  ) {
     const confirmation = window.confirm(
       "Supprimer cette prestation ?"
     );
 
-    if (!confirmation)
-    {
+    if (!confirmation) {
       return;
     }
 
-    try
-    {
+    try {
       setPrestationEnCours(prestation.id);
       setErreur("");
 
-      await supprimerPrestation(
-        prestation.id
-      );
+      await supprimerPrestation(prestation.id);
 
       setPrestations(
         prestations.filter(
-          (item) =>
-            item.id !== prestation.id
+          (item) => item.id !== prestation.id
         )
       );
-    }
-    catch (error)
-    {
+    } catch (error) {
       console.error(error);
 
-      setErreur(
-        "Impossible de supprimer la prestation."
-      );
-    }
-    finally
-    {
+      setErreur("Impossible de supprimer la prestation.");
+    } finally {
       setPrestationEnCours(null);
     }
   }
 
-  async function envoyerCorbeille()
-  {
-    if (!client)
-    {
+  async function envoyerCorbeille() {
+    if (!client) {
       return;
     }
 
     setSuppression(true);
     setErreur("");
 
-    try
-    {
-      await mettreClientCorbeille(
-        client.id
-      );
+    try {
+      await mettreClientCorbeille(client.id);
 
       router.push("/clients");
-    }
-    catch (error)
-    {
+    } catch (error) {
       console.error(error);
 
       setErreur(
@@ -227,93 +172,76 @@ export default function FicheClient()
     }
   }
 
-  useEffect(() =>
-  {
+  useEffect(() => {
     chargerClient();
   }, [params.id]);
 
-  if (loading)
-  {
+  if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-950 text-white">
-        <p>
+      <main className="flex min-h-screen items-center justify-center bg-gray-950 px-4 text-white">
+        <p className="text-center">
           Chargement du client...
         </p>
       </main>
     );
   }
 
-  if (erreur && !client)
-  {
+  if (erreur && !client) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-950 p-6 text-white">
-
         <div className="text-center">
-
           <p className="mb-4 text-red-400">
             {erreur}
           </p>
 
           <button
-            onClick={() =>
-            {
-              router.push("/clients");
-            }}
+            onClick={() => router.push("/clients")}
             className="rounded-lg bg-white px-5 py-3 font-medium text-black"
           >
             Retour aux clients
           </button>
-
         </div>
-
       </main>
     );
   }
 
-  if (!client)
-  {
+  if (!client) {
     return null;
   }
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white">
-
-      <div className="flex min-h-screen">
+    <main className="min-h-screen overflow-x-hidden bg-gray-950 text-white">
+      <div className="min-h-screen md:flex">
 
         <Sidebar />
 
-        <section className="flex-1 p-6 md:p-10">
+        <section className="min-w-0 flex-1 px-4 py-6 sm:px-6 sm:py-8 md:p-10">
 
           <button
-            onClick={() =>
-            {
-              router.push("/clients");
-            }}
-            className="mb-8 text-sm text-gray-400 hover:text-white"
+            onClick={() => router.push("/clients")}
+            className="mb-6 text-sm text-gray-400 hover:text-white sm:mb-8"
           >
             ← Retour aux clients
           </button>
 
-          <div className="mb-8">
-
+          <div className="mb-6 sm:mb-8">
             <p className="text-sm text-gray-500">
               Client #{client.numero_client}
             </p>
 
-            <h1 className="mt-1 text-3xl font-bold">
+            <h1 className="mt-1 break-words text-2xl font-bold sm:text-3xl">
               {client.prenom} {client.nom}
             </h1>
-
           </div>
 
           {erreur && (
-            <div className="mb-6 rounded-lg bg-red-950 p-4 text-red-300">
+            <div className="mb-6 rounded-lg bg-red-950 p-4 text-sm text-red-300">
               {erreur}
             </div>
           )}
 
           {modifier ? (
-            <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+            <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
 
               <h2 className="mb-6 text-xl font-semibold">
                 Modifier le client
@@ -321,26 +249,22 @@ export default function FicheClient()
 
               <ClientForm
                 client={client}
-                onClientModifie={async () =>
-                {
+                onClientModifie={async () => {
                   setModifier(false);
                   setLoading(true);
 
                   await chargerClient();
                 }}
-                onFermer={() =>
-                {
+                onFermer={() => {
                   setModifier(false);
                 }}
               />
 
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid min-w-0 gap-5 md:grid-cols-2 md:gap-6">
 
-              {/* INFORMATIONS */}
-
-              <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+              <div className="min-w-0 rounded-2xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
 
                 <h2 className="mb-5 text-xl font-semibold">
                   Informations
@@ -353,7 +277,7 @@ export default function FicheClient()
                       Téléphone
                     </p>
 
-                    <p className="mt-1">
+                    <p className="mt-1 break-words">
                       {client.telephone}
                     </p>
                   </div>
@@ -363,7 +287,7 @@ export default function FicheClient()
                       Email
                     </p>
 
-                    <p className="mt-1">
+                    <p className="mt-1 break-words">
                       {client.email || "Non renseigné"}
                     </p>
                   </div>
@@ -393,7 +317,7 @@ export default function FicheClient()
                       Catégorie
                     </p>
 
-                    <p className="mt-1">
+                    <p className="mt-1 break-words">
                       {client.categorie}
                     </p>
                   </div>
@@ -403,7 +327,7 @@ export default function FicheClient()
                       Notes
                     </p>
 
-                    <p className="mt-1">
+                    <p className="mt-1 break-words">
                       {client.notes || "Aucune note"}
                     </p>
                   </div>
@@ -412,15 +336,11 @@ export default function FicheClient()
 
               </div>
 
+              <div className="min-w-0 rounded-2xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
 
-              {/* PRESTATIONS */}
-
-              <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
-
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
                   <div>
-
                     <h2 className="text-xl font-semibold">
                       Prestations
                     </h2>
@@ -429,20 +349,16 @@ export default function FicheClient()
                       {prestations.length} prestation
                       {prestations.length !== 1 ? "s" : ""}
                     </p>
-
                   </div>
 
                   <button
                     onClick={ouvrirAjoutPrestation}
-                    className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:opacity-90"
+                    className="w-full rounded-lg bg-white px-4 py-3 text-sm font-medium text-black hover:opacity-90 sm:w-auto"
                   >
                     + Ajouter
                   </button>
 
                 </div>
-
-
-                {/* FORMULAIRE AJOUT */}
 
                 {ajoutPrestation && (
                   <div className="mt-6 rounded-xl border border-gray-800 bg-gray-950 p-4">
@@ -454,8 +370,7 @@ export default function FicheClient()
                     <input
                       type="date"
                       value={datePrestation}
-                      onChange={(event) =>
-                      {
+                      onChange={(event) => {
                         setDatePrestation(
                           event.target.value
                         );
@@ -463,21 +378,20 @@ export default function FicheClient()
                       className="mt-2 w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white"
                     />
 
-                    <div className="mt-4 flex gap-3">
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
 
                       <button
-                        onClick={() =>
-                        {
+                        onClick={() => {
                           setAjoutPrestation(false);
                         }}
-                        className="rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-300"
+                        className="rounded-lg border border-gray-700 px-4 py-3 text-sm text-gray-300"
                       >
                         Annuler
                       </button>
 
                       <button
                         onClick={validerPrestation}
-                        className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black"
+                        className="rounded-lg bg-white px-4 py-3 text-sm font-medium text-black"
                       >
                         Valider
                       </button>
@@ -486,9 +400,6 @@ export default function FicheClient()
 
                   </div>
                 )}
-
-
-                {/* LISTE DES PRESTATIONS */}
 
                 <div className="mt-6">
 
@@ -499,61 +410,54 @@ export default function FicheClient()
                   ) : (
                     <div className="space-y-3">
 
-                      {prestations.map(
-                        (prestation) =>
-                        (
-                          <div
-                            key={prestation.id}
-                            className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-950 px-4 py-3"
-                          >
+                      {prestations.map((prestation) => (
+                        <div
+                          key={prestation.id}
+                          className="flex flex-col gap-3 rounded-lg border border-gray-800 bg-gray-950 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                        >
 
-                            <p>
-                              {new Date(
-                                prestation.date_prestation
-                              ).toLocaleDateString(
-                                "fr-FR"
-                              )}
-                            </p>
+                          <p>
+                            {new Date(
+                              prestation.date_prestation
+                            ).toLocaleDateString("fr-FR")}
+                          </p>
 
-                            <div className="flex gap-2">
+                          <div className="flex flex-col gap-2 sm:flex-row">
 
-                              <button
-                                onClick={() =>
-                                {
-                                  modifierDatePrestation(
-                                    prestation
-                                  );
-                                }}
-                                disabled={
-                                  prestationEnCours ===
-                                  prestation.id
-                                }
-                                className="rounded-lg border border-gray-700 px-3 py-1 text-sm text-gray-300 hover:bg-gray-800 disabled:opacity-50"
-                              >
-                                Modifier
-                              </button>
+                            <button
+                              onClick={() => {
+                                modifierDatePrestation(
+                                  prestation
+                                );
+                              }}
+                              disabled={
+                                prestationEnCours ===
+                                prestation.id
+                              }
+                              className="rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 hover:bg-gray-800 disabled:opacity-50"
+                            >
+                              Modifier
+                            </button>
 
-                              <button
-                                onClick={() =>
-                                {
-                                  supprimerUnePrestation(
-                                    prestation
-                                  );
-                                }}
-                                disabled={
-                                  prestationEnCours ===
-                                  prestation.id
-                                }
-                                className="rounded-lg border border-red-800 px-3 py-1 text-sm text-red-400 hover:bg-red-950 disabled:opacity-50"
-                              >
-                                Supprimer
-                              </button>
-
-                            </div>
+                            <button
+                              onClick={() => {
+                                supprimerUnePrestation(
+                                  prestation
+                                );
+                              }}
+                              disabled={
+                                prestationEnCours ===
+                                prestation.id
+                              }
+                              className="rounded-lg border border-red-800 px-3 py-2 text-sm text-red-400 hover:bg-red-950 disabled:opacity-50"
+                            >
+                              Supprimer
+                            </button>
 
                           </div>
-                        )
-                      )}
+
+                        </div>
+                      ))}
 
                     </div>
                   )}
@@ -562,20 +466,16 @@ export default function FicheClient()
 
               </div>
 
-
-              {/* ACTIONS */}
-
-              <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 md:col-span-2">
+              <div className="min-w-0 rounded-2xl border border-gray-800 bg-gray-900 p-5 sm:p-6 md:col-span-2">
 
                 <h2 className="mb-5 text-xl font-semibold">
                   Actions
                 </h2>
 
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row">
 
                   <button
-                    onClick={() =>
-                    {
+                    onClick={() => {
                       setModifier(true);
                     }}
                     className="rounded-lg bg-white px-5 py-3 font-medium text-black hover:opacity-90"
@@ -584,8 +484,7 @@ export default function FicheClient()
                   </button>
 
                   <button
-                    onClick={() =>
-                    {
+                    onClick={() => {
                       setConfirmation(true);
                     }}
                     className="rounded-lg border border-red-800 px-5 py-3 text-red-400 hover:bg-red-950"
@@ -604,13 +503,10 @@ export default function FicheClient()
 
       </div>
 
-
-      {/* CONFIRMATION CORBEILLE */}
-
       {confirmation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4 sm:p-6">
 
-          <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-gray-900 p-5 shadow-xl sm:p-6">
 
             <h2 className="text-xl font-semibold">
               Mettre le client à la corbeille ?
@@ -622,11 +518,10 @@ export default function FicheClient()
               suppression définitive.
             </p>
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
 
               <button
-                onClick={() =>
-                {
+                onClick={() => {
                   setConfirmation(false);
                 }}
                 disabled={suppression}

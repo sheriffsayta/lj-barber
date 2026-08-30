@@ -257,11 +257,11 @@ export default function Clients()
   return (
     <main className="min-h-screen overflow-x-hidden bg-gray-950 text-white">
 
-      <div className="flex min-h-screen">
+      <div className="min-h-screen">
 
         <Sidebar />
 
-        <section className="min-w-0 flex-1 px-4 py-6 sm:px-6 sm:py-8 md:p-10">
+        <section className="min-w-0 flex-1 px-4 py-6 sm:px-6 sm:py-8 md:ml-64 md:p-10 ">
 
           {/* ========================================================
               EN-TÊTE

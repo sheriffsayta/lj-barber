@@ -25,28 +25,47 @@ const liens = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar()
+{
   const pathname = usePathname();
 
   const [role, setRole] = useState<Role | null>(null);
   const [menuOuvert, setMenuOuvert] = useState(false);
 
-  useEffect(() => {
-    async function chargerRole() {
-      const {
-        data: { user },
+  useEffect(() =>
+  {
+    async function chargerRole()
+    {
+      const
+      {
+        data:
+        {
+          user
+        }
       } = await supabase.auth.getUser();
 
-      if (!user) return;
+      if (!user)
+      {
+        return;
+      }
 
-      const { data, error } = await supabase
+      const
+      {
+        data,
+        error
+      } = await supabase
         .from("profiles")
         .select("role")
         .eq("user_id", user.id)
         .single();
 
-      if (error) {
-        console.error("Erreur rôle :", error);
+      if (error)
+      {
+        console.error(
+          "Erreur rôle :",
+          error
+        );
+
         return;
       }
 
@@ -56,24 +75,30 @@ export default function Sidebar() {
     chargerRole();
   }, []);
 
-  async function seDeconnecter() {
+  async function seDeconnecter()
+  {
     await supabase.auth.signOut();
+
     window.location.href = "/";
   }
 
-  function fermerMenu() {
+  function fermerMenu()
+  {
     setMenuOuvert(false);
   }
 
-  function lienEstActif(href: string) {
-    if (href === "/dashboard") {
+  function lienEstActif(href: string)
+  {
+    if (href === "/dashboard")
+    {
       return pathname === "/dashboard";
     }
 
     return pathname.startsWith(href);
   }
 
-  function classeLien(href: string) {
+  function classeLien(href: string)
+  {
     return lienEstActif(href)
       ? "flex min-h-12 items-center gap-3 rounded-xl bg-gray-800 px-4 py-3 font-medium text-white"
       : "flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-gray-300 hover:bg-gray-800";
@@ -82,7 +107,7 @@ export default function Sidebar() {
   return (
     <>
       {/* ============================================================
-          MOBILE / IPHONE / IPAD
+          MOBILE
       ============================================================ */}
 
       <header className="sticky top-0 z-50 border-b border-gray-800 bg-gray-900/95 backdrop-blur md:hidden">
@@ -99,7 +124,12 @@ export default function Sidebar() {
 
           <button
             type="button"
-            onClick={() => setMenuOuvert((ouvert) => !ouvert)}
+            onClick={() =>
+            {
+              setMenuOuvert(
+                (ouvert) => !ouvert
+              );
+            }}
             className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-700 text-xl text-white active:bg-gray-800"
             aria-label={
               menuOuvert
@@ -112,33 +142,40 @@ export default function Sidebar() {
 
         </div>
 
+
         {menuOuvert && (
           <div className="border-t border-gray-800 bg-gray-900 px-4 pb-4 pt-3">
 
             <nav className="space-y-2">
 
-              {liens.map((lien) => (
-                <Link
-                  key={lien.href}
-                  href={lien.href}
-                  onClick={fermerMenu}
-                  className={classeLien(lien.href)}
-                >
-                  <span className="text-lg">
-                    {lien.emoji}
-                  </span>
+              {liens.map(
+                (lien) =>
+                (
+                  <Link
+                    key={lien.href}
+                    href={lien.href}
+                    onClick={fermerMenu}
+                    className={classeLien(lien.href)}
+                  >
+                    <span className="text-lg">
+                      {lien.emoji}
+                    </span>
 
-                  <span>
-                    {lien.nom}
-                  </span>
-                </Link>
-              ))}
+                    <span>
+                      {lien.nom}
+                    </span>
+                  </Link>
+                )
+              )}
+
 
               {role === "ADMIN" && (
                 <Link
                   href="/administration"
                   onClick={fermerMenu}
-                  className={classeLien("/administration")}
+                  className={classeLien(
+                    "/administration"
+                  )}
                 >
                   <span className="text-lg">
                     🔐
@@ -149,6 +186,7 @@ export default function Sidebar() {
                   </span>
                 </Link>
               )}
+
 
               <button
                 type="button"
@@ -173,10 +211,10 @@ export default function Sidebar() {
 
 
       {/* ============================================================
-          ORDINATEUR / IPAD HORIZONTAL
+          DESKTOP
       ============================================================ */}
 
-      <aside className="hidden min-h-screen w-64 shrink-0 border-r border-gray-800 bg-gray-900 p-5 md:flex md:flex-col">
+      <aside className="fixed left-0 top-0 hidden h-screen w-64 border-r border-gray-800 bg-gray-900 p-5 md:flex md:flex-col">
 
         <div className="mb-8">
 
@@ -193,28 +231,35 @@ export default function Sidebar() {
 
         </div>
 
+
         <nav className="space-y-2">
 
-          {liens.map((lien) => (
-            <Link
-              key={lien.href}
-              href={lien.href}
-              className={classeLien(lien.href)}
-            >
-              <span className="text-lg">
-                {lien.emoji}
-              </span>
+          {liens.map(
+            (lien) =>
+            (
+              <Link
+                key={lien.href}
+                href={lien.href}
+                className={classeLien(lien.href)}
+              >
+                <span className="text-lg">
+                  {lien.emoji}
+                </span>
 
-              <span>
-                {lien.nom}
-              </span>
-            </Link>
-          ))}
+                <span>
+                  {lien.nom}
+                </span>
+              </Link>
+            )
+          )}
+
 
           {role === "ADMIN" && (
             <Link
               href="/administration"
-              className={classeLien("/administration")}
+              className={classeLien(
+                "/administration"
+              )}
             >
               <span className="text-lg">
                 🔐
@@ -227,6 +272,7 @@ export default function Sidebar() {
           )}
 
         </nav>
+
 
         <button
           type="button"
