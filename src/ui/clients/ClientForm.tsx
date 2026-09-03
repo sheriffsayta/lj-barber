@@ -3,12 +3,14 @@
 import { FormEvent, useState } from "react";
 import {
   ajouterClient,
-  modifierClient
+  modifierClient,
+  type Client,
+  type ClientInput
 } from "@/lib/clients";
 
 type ClientFormProps =
 {
-  client?: any;
+  client?: Client;
   onClientAjoute?: () => void;
   onClientModifie?: () => void;
   onFermer?: () => void;
@@ -64,6 +66,18 @@ export default function ClientForm(
 
   const modification = Boolean(client);
 
+  const donneesClient: ClientInput = {
+    prenom,
+    nom,
+    telephone,
+    email,
+    dateNaissance,
+    sexe,
+    categorie,
+    notes,
+    smsConsentement
+  };
+
   async function enregistrer(
     event: FormEvent<HTMLFormElement>
   )
@@ -75,36 +89,19 @@ export default function ClientForm(
 
     try
     {
-      if (modification)
+      if (client)
       {
         await modifierClient(
           client.id,
-          prenom,
-          nom,
-          telephone,
-          email,
-          dateNaissance,
-          sexe,
-          categorie,
-          notes,
-          smsConsentement
+          donneesClient,
+          client.sms_consentement
         );
 
         onClientModifie?.();
       }
       else
       {
-        await ajouterClient(
-          prenom,
-          nom,
-          telephone,
-          email,
-          dateNaissance,
-          sexe,
-          categorie,
-          notes,
-          smsConsentement
-        );
+        await ajouterClient(donneesClient);
 
         onClientAjoute?.();
       }

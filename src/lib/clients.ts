@@ -17,6 +17,23 @@ export type Client =
   date_suppression: string | null;
 };
 
+/**
+ * Champs modifiables depuis les formulaires client.
+ * Ajouter un nouveau champ ici le rend disponible sans exposer les champs
+ * techniques de la table (id, numero_client, dates de suppression, etc.).
+ */
+export type ClientInput = {
+  prenom: string;
+  nom: string;
+  telephone: string;
+  email: string;
+  dateNaissance: string;
+  sexe: string;
+  categorie: string;
+  notes: string;
+  smsConsentement: boolean;
+};
+
 export type Prestation = 
 {
   id: string;
@@ -107,15 +124,17 @@ export async function recupererClient(
 
 // Ajouter un client
 export async function ajouterClient(
-  prenom: string,
-  nom: string,
-  telephone: string,
-  email: string,
-  dateNaissance: string,
-  sexe: string,
-  categorie: string,
-  notes: string,
-  smsConsentement: boolean
+  {
+    prenom,
+    nom,
+    telephone,
+    email,
+    dateNaissance,
+    sexe,
+    categorie,
+    notes,
+    smsConsentement
+  }: ClientInput
 )
 {
   const
@@ -160,40 +179,46 @@ export async function ajouterClient(
 // Modifier un client
 export async function modifierClient(
   id: string,
-  prenom: string,
-  nom: string,
-  telephone: string,
-  email: string,
-  dateNaissance: string,
-  sexe: string,
-  categorie: string,
-  notes: string,
-  smsConsentement: boolean
+  {
+    prenom,
+    nom,
+    telephone,
+    email,
+    dateNaissance,
+    sexe,
+    categorie,
+    notes,
+    smsConsentement
+  }: ClientInput,
+  ancienConsentementSms: boolean
 )
 {
+  const consentementModifie = smsConsentement !== ancienConsentementSms;
+
+  const modification = {
+    prenom,
+    nom,
+    telephone,
+    email: email || null,
+    date_naissance: dateNaissance || null,
+    sexe: sexe || null,
+    categorie,
+    notes: notes || null,
+    sms_consentement: smsConsentement,
+    ...(consentementModifie && {
+      sms_consentement_date: smsConsentement
+        ? new Date().toISOString()
+        : null
+    })
+  };
+
   const
   {
     error
   } = await supabase
     .from("clients")
     .update(
-      {
-        prenom,
-        nom,
-        telephone,
-        email: email || null,
-        date_naissance:
-          dateNaissance || null,
-        sexe: sexe || null,
-        categorie,
-        notes: notes || null,
-        sms_consentement:
-          smsConsentement,
-        sms_consentement_date:
-          smsConsentement
-            ? new Date().toISOString()
-            : null
-      }
+      modification
     )
     .eq("id", id);
 
