@@ -63,6 +63,7 @@ export async function creerUtilisateurAdministration(donnees: {
 export async function modifierUtilisateurAdministration(donnees: {
   userId: string;
   nom: string;
+  email: string;
   role: Role;
 }) {
   return appelerAdministration<{ utilisateur: UtilisateurAdministration }>("POST", {

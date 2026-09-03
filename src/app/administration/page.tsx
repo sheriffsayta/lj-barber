@@ -13,7 +13,7 @@ import { ROLE_DETAILS, ROLES, type Role } from "@/lib/roles";
 import Sidebar from "@/ui/Sidebar";
 import RoleGuard from "@/ui/auth/RoleGuard";
 
-type Edition = Pick<UtilisateurAdministration, "nom" | "role">;
+type Edition = Pick<UtilisateurAdministration, "nom" | "email" | "role">;
 
 const formulaireInitial = {
   nom: "",
@@ -36,6 +36,8 @@ function AdministrationContent() {
   const [editions, setEditions] = useState<Record<string, Edition>>({});
   const [formulaire, setFormulaire] = useState(formulaireInitial);
   const [motsDePasse, setMotsDePasse] = useState<Record<string, string>>({});
+  const [editionOuverte, setEditionOuverte] = useState<string | null>(null);
+  const [creationOuverte, setCreationOuverte] = useState(false);
   const [chargement, setChargement] = useState(true);
   const [actionEnCours, setActionEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState("");
@@ -44,6 +46,7 @@ function AdministrationContent() {
   function preparerEditions(profils: UtilisateurAdministration[]) {
     setEditions(Object.fromEntries(profils.map((profil) => [profil.userId, {
       nom: profil.nom,
+      email: profil.email,
       role: profil.role
     }])));
   }
@@ -157,10 +160,17 @@ function AdministrationContent() {
           {message && <p className="mb-6 rounded-xl border border-green-900 bg-green-950 p-4 text-sm text-green-300">{message}</p>}
 
           <section className="rounded-2xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
-            <h2 className="text-lg font-semibold sm:text-xl">Ajouter un compte</h2>
-            <p className="mt-1 text-sm leading-6 text-gray-400">Le mot de passe doit contenir au moins 8 caractères.</p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold sm:text-xl">Ajouter un compte</h2>
+                <p className="mt-1 text-sm leading-6 text-gray-400">Crée un accès pour un membre de l'équipe ou la tablette d'inscription.</p>
+              </div>
+              <button type="button" onClick={() => setCreationOuverte((ouverte) => !ouverte)} className="min-h-11 rounded-xl border border-gray-700 px-4 py-3 text-sm hover:bg-gray-800">
+                {creationOuverte ? "Fermer" : "Ajouter un compte"}
+              </button>
+            </div>
 
-            <form onSubmit={creerCompte} className="mt-5 grid gap-4 md:grid-cols-2">
+            {creationOuverte && <form onSubmit={creerCompte} className="mt-5 grid gap-4 border-t border-gray-800 pt-5 md:grid-cols-2">
               <label className="text-sm">Nom du compte
                 <input required minLength={2} value={formulaire.nom} onChange={(event) => setFormulaire({ ...formulaire, nom: event.target.value })} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2" />
               </label>
@@ -179,7 +189,7 @@ function AdministrationContent() {
               <button disabled={actionEnCours === "creation"} className="min-h-11 rounded-xl bg-white px-5 py-3 text-sm font-medium text-black disabled:opacity-50 md:w-fit">
                 {actionEnCours === "creation" ? "Création..." : "Créer le compte"}
               </button>
-            </form>
+            </form>}
           </section>
 
           <section className="mt-6 overflow-hidden rounded-2xl border border-gray-800 bg-gray-900">
@@ -194,34 +204,42 @@ function AdministrationContent() {
                 const estCompteActuel = utilisateur.userId === utilisateurActuelId;
 
                 return (
-                  <article key={utilisateur.userId} className="grid gap-4 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                  <article key={utilisateur.userId} className="grid gap-4 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto]">
                     <div className="min-w-0">
-                      <p className="break-words font-medium">{utilisateur.email || "E-mail non disponible"}</p>
+                      <p className="break-words font-medium">{utilisateur.nom}</p>
+                      <p className="mt-1 break-words text-sm text-gray-500">{utilisateur.email || "E-mail non disponible"}</p>
                       <p className="mt-1 text-sm text-gray-500">{estCompteActuel ? "Votre compte" : "Compte utilisateur"}</p>
                       <span className={`mt-3 inline-flex rounded-full px-3 py-2 text-sm ${classRole(utilisateur.role)}`}>{ROLE_DETAILS[utilisateur.role].libelle}</span>
-                      <p className="mt-2 text-sm leading-5 text-gray-400">{ROLE_DETAILS[edition?.role ?? utilisateur.role].description}</p>
+                      <p className="mt-2 text-sm leading-5 text-gray-400">{ROLE_DETAILS[utilisateur.role].description}</p>
                     </div>
 
-                    <div className="grid gap-3">
+                    <button type="button" onClick={() => setEditionOuverte((ouverte) => ouverte === utilisateur.userId ? null : utilisateur.userId)} className="min-h-11 rounded-xl border border-gray-700 px-4 py-3 text-sm hover:bg-gray-800">
+                      {editionOuverte === utilisateur.userId ? "Fermer" : "Modifier"}
+                    </button>
+
+                    {editionOuverte === utilisateur.userId && <div className="grid gap-3 border-t border-gray-800 pt-4 lg:col-span-2 sm:grid-cols-2">
                       <label className="text-sm">Nom affiché
-                        <input value={edition?.nom ?? ""} onChange={(event) => setEditions((valeurs) => ({ ...valeurs, [utilisateur.userId]: { nom: event.target.value, role: edition?.role ?? utilisateur.role } }))} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2" />
+                        <input value={edition?.nom ?? ""} onChange={(event) => setEditions((valeurs) => ({ ...valeurs, [utilisateur.userId]: { nom: event.target.value, email: edition?.email ?? utilisateur.email, role: edition?.role ?? utilisateur.role } }))} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2" />
+                      </label>
+                      <label className="text-sm">E-mail de connexion
+                        <input type="email" autoComplete="email" value={edition?.email ?? ""} onChange={(event) => setEditions((valeurs) => ({ ...valeurs, [utilisateur.userId]: { nom: edition?.nom ?? utilisateur.nom, email: event.target.value, role: edition?.role ?? utilisateur.role } }))} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2" />
                       </label>
                       <label className="text-sm">Rôle et droits
-                        <select disabled={estCompteActuel} value={edition?.role ?? utilisateur.role} onChange={(event) => setEditions((valeurs) => ({ ...valeurs, [utilisateur.userId]: { nom: edition?.nom ?? utilisateur.nom, role: event.target.value as Role } }))} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2 disabled:opacity-50">
+                        <select disabled={estCompteActuel} value={edition?.role ?? utilisateur.role} onChange={(event) => setEditions((valeurs) => ({ ...valeurs, [utilisateur.userId]: { nom: edition?.nom ?? utilisateur.nom, email: edition?.email ?? utilisateur.email, role: event.target.value as Role } }))} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2 disabled:opacity-50">
                           {ROLES.map((role) => <option key={role} value={role}>{ROLE_DETAILS[role].libelle}</option>)}
                         </select>
                       </label>
                       {estCompteActuel && <p className="text-xs text-gray-500">Pour votre sécurité, vous ne pouvez pas retirer votre propre rôle administrateur.</p>}
-                      <button type="button" disabled={actionEnCours === `profil-${utilisateur.userId}`} onClick={() => void enregistrerUtilisateur(utilisateur)} className="min-h-11 rounded-xl border border-gray-700 px-4 py-3 text-sm hover:bg-gray-800 disabled:opacity-50">
+                      <button type="button" disabled={actionEnCours === `profil-${utilisateur.userId}`} onClick={() => void enregistrerUtilisateur(utilisateur)} className="min-h-11 rounded-xl border border-gray-700 px-4 py-3 text-sm hover:bg-gray-800 disabled:opacity-50 sm:self-end">
                         {actionEnCours === `profil-${utilisateur.userId}` ? "Enregistrement..." : "Enregistrer le compte"}
                       </button>
-                      <label className="text-sm">Nouveau mot de passe
+                      <label className="text-sm sm:col-span-2">Nouveau mot de passe
                         <input minLength={8} type="password" autoComplete="new-password" value={motsDePasse[utilisateur.userId] ?? ""} onChange={(event) => setMotsDePasse((valeurs) => ({ ...valeurs, [utilisateur.userId]: event.target.value }))} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2" />
                       </label>
-                      <button type="button" disabled={actionEnCours === `mot-de-passe-${utilisateur.userId}`} onClick={() => void changerMotDePasse(utilisateur)} className="min-h-11 rounded-xl border border-gray-700 px-4 py-3 text-sm hover:bg-gray-800 disabled:opacity-50">
+                      <button type="button" disabled={actionEnCours === `mot-de-passe-${utilisateur.userId}`} onClick={() => void changerMotDePasse(utilisateur)} className="min-h-11 rounded-xl border border-gray-700 px-4 py-3 text-sm hover:bg-gray-800 disabled:opacity-50 sm:col-span-2 sm:w-fit">
                         {actionEnCours === `mot-de-passe-${utilisateur.userId}` ? "Modification..." : "Modifier le mot de passe"}
                       </button>
-                    </div>
+                    </div>}
                   </article>
                 );
               })}

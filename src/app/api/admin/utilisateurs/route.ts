@@ -41,6 +41,19 @@ function clientAdministrateur() {
   });
 }
 
+function clientAuthentification() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const clePublique = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!url || !clePublique) {
+    throw new Error("La configuration publique Supabase est incomplète.");
+  }
+
+  return createClient(url, clePublique, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  });
+}
+
 async function verifierAdministrateur(request: Request): Promise<Autorisation> {
   const jeton = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
 
@@ -49,7 +62,7 @@ async function verifierAdministrateur(request: Request): Promise<Autorisation> {
   }
 
   const supabaseAdmin = clientAdministrateur();
-  const { data: { user }, error: erreurUtilisateur } = await supabaseAdmin.auth.getUser(jeton);
+  const { data: { user }, error: erreurUtilisateur } = await clientAuthentification().auth.getUser(jeton);
 
   if (erreurUtilisateur || !user) {
     return { erreur: "Session invalide.", status: 401 };
@@ -156,7 +169,7 @@ export async function POST(request: Request) {
     }
 
     if (donnees.action === "modifier") {
-      if (!uuidValide(donnees.userId) || !texteValide(donnees.nom, 2) || !estRole(donnees.role)) {
+      if (!uuidValide(donnees.userId) || !texteValide(donnees.nom, 2) || !texteValide(donnees.email, 3) || !estRole(donnees.role)) {
         return reponseErreur("Les informations du compte sont invalides.");
       }
 
@@ -194,14 +207,30 @@ export async function POST(request: Request) {
         return reponseErreur("Impossible d'enregistrer les modifications.");
       }
 
-      const { data: authData } = await supabaseAdmin.auth.admin.getUserById(donnees.userId);
+      const email = donnees.email.trim().toLowerCase();
+      const { data: authData, error: erreurLectureAuth } = await supabaseAdmin.auth.admin.getUserById(donnees.userId);
+
+      if (erreurLectureAuth || !authData.user) {
+        return reponseErreur("Impossible de récupérer l'adresse e-mail du compte.");
+      }
+
+      if (authData.user.email?.toLowerCase() !== email) {
+        const { error: erreurEmail } = await supabaseAdmin.auth.admin.updateUserById(donnees.userId, {
+          email,
+          email_confirm: true
+        });
+
+        if (erreurEmail) {
+          return reponseErreur(`Le nom et le rôle ont été enregistrés, mais pas l'e-mail : ${erreurEmail.message}`);
+        }
+      }
 
       return Response.json({
         utilisateur: {
           userId: donnees.userId,
           nom: donnees.nom.trim(),
           role: donnees.role,
-          email: authData.user?.email ?? "",
+          email,
           createdAt: cible.created_at
         }
       });
