@@ -81,8 +81,8 @@ export default function Inscription()
 
               <p className="mt-4 max-w-md text-gray-400">
                 {anglais
-                  ? "Create your client profile in just a few moments."
-                  : "Créez votre fiche client en quelques instants."}
+                  ? "Create your client profile in just a few clicks."
+                  : "Créez votre fiche client en quelques clics."}
               </p>
 
               <button
@@ -119,9 +119,9 @@ export default function Inscription()
               <button
                 type="button"
                 onClick={revenirAccueil}
-                className="mb-5 text-sm text-gray-400 hover:text-white"
+                className="mb-6 inline-flex min-h-11 items-center rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
               >
-                ← {anglais ? "Back" : "Retour"}
+                ← {anglais ? "Cancel and return to the welcome page" : "Annuler et revenir à l’accueil"}
               </button>
 
               <h1 className="text-2xl font-bold sm:text-3xl">
