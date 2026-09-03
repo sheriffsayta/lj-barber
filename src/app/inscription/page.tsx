@@ -3,6 +3,7 @@
 import { useState } from "react";
 import ClientForm from "@/ui/clients/ClientForm";
 import RoleGuard from "@/ui/auth/RoleGuard";
+import Sidebar from "@/ui/Sidebar";
 
 export default function Inscription()
 {
@@ -11,7 +12,8 @@ export default function Inscription()
 
   return (
     <RoleGuard roles={["CLIENT"]}>
-      <main className="min-h-screen bg-gray-950 px-4 py-8 text-white sm:px-6">
+      <main className="min-h-screen bg-gray-950 px-4 pb-8 pt-24 text-white sm:px-6">
+        <Sidebar client />
         <section className="mx-auto w-full max-w-2xl rounded-2xl border border-gray-800 bg-gray-900 p-5 sm:p-8">
           {numeroClient ? (
             <div className="py-10 text-center">

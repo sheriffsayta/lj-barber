@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-type Role = "ADMIN" | "COIFFEUR";
+type Role = "ADMIN" | "COIFFEUR" | "CLIENT";
 
 const liens = [
   {
@@ -25,7 +25,13 @@ const liens = [
   },
 ];
 
-export default function Sidebar()
+export default function Sidebar(
+  {
+    client = false
+  }: {
+    client?: boolean;
+  }
+)
 {
   const pathname = usePathname();
 
@@ -176,7 +182,7 @@ export default function Sidebar()
           {/* LOGO */}
 
           <Link
-            href="/dashboard"
+            href={client ? "/inscription" : "/dashboard"}
             onClick={fermerMenu}
             className="ml-3 text-lg font-bold text-white sm:text-xl"
           >
@@ -226,7 +232,7 @@ export default function Sidebar()
         <div className="mb-8 flex items-center justify-between">
 
           <Link
-            href="/dashboard"
+            href={client ? "/inscription" : "/dashboard"}
             onClick={fermerMenu}
             className="text-xl font-bold text-white"
           >
@@ -252,6 +258,7 @@ export default function Sidebar()
             NAVIGATION
         ====================================================== */}
 
+        {!client && (
         <nav className="space-y-2">
 
           {liens.map(
@@ -302,6 +309,7 @@ export default function Sidebar()
           )}
 
         </nav>
+        )}
 
 
         {/* ======================================================
