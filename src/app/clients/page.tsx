@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import Sidebar from "@/ui/Sidebar";
 import ClientForm from "@/ui/clients/ClientForm";
+import RoleGuard from "@/ui/auth/RoleGuard";
 
 import {
   rechercherClients,
@@ -15,7 +16,7 @@ import {
   type Client
 } from "@/lib/clients";
 
-export default function Clients()
+function ClientsContent()
 {
   const router = useRouter();
 
@@ -65,22 +66,51 @@ export default function Clients()
     }
   }
 
-  async function chargerDonnees()
-  {
-    setLoading(true);
-    setErreur("");
-
-    await Promise.all([
-      chargerClients(),
-      chargerCorbeille()
-    ]);
-
-    setLoading(false);
-  }
-
   useEffect(() =>
   {
-    chargerDonnees();
+    let actif = true;
+
+    async function charger()
+    {
+      try
+      {
+        const [clientsData, corbeilleData] = await Promise.all([
+          rechercherClients(),
+          recupererCorbeille()
+        ]);
+
+        if (!actif)
+        {
+          return;
+        }
+
+        setClients(clientsData);
+        setCorbeille(corbeilleData);
+      }
+      catch (error)
+      {
+        console.error(error);
+
+        if (actif)
+        {
+          setErreur("Impossible de récupérer les clients.");
+        }
+      }
+      finally
+      {
+        if (actif)
+        {
+          setLoading(false);
+        }
+      }
+    }
+
+    void charger();
+
+    return () =>
+    {
+      actif = false;
+    };
   }, []);
 
   async function restaurer(id: string)
@@ -170,6 +200,8 @@ export default function Clients()
     const correspondRecherche =
       client.nom.toLowerCase().includes(texteRecherche) ||
       client.prenom.toLowerCase().includes(texteRecherche) ||
+      (client.pseudo ?? "").toLowerCase().includes(texteRecherche) ||
+      (client.reseaux_sociaux ?? "").toLowerCase().includes(texteRecherche) ||
       client.telephone.includes(texteRecherche) ||
       client.numero_client.toString().includes(texteRecherche);
 
@@ -798,7 +830,7 @@ export default function Clients()
                   </h2>
 
                   <p className="mt-1 text-sm leading-5 text-gray-400">
-                    Les clients restent récupérables jusqu'à leur suppression définitive.
+                    Les clients restent récupérables jusqu&apos;à leur suppression définitive.
                   </p>
 
                 </div>
@@ -942,4 +974,9 @@ export default function Clients()
 
     </main>
   );
+}
+
+export default function Clients()
+{
+  return <RoleGuard roles={["ADMIN", "COIFFEUR"]}><ClientsContent /></RoleGuard>;
 }

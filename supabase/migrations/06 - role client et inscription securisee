@@ -1,0 +1,158 @@
+-- ============================================================
+-- LJ BARBER - COMPTE TABLETTE ET INSCRIPTION CLIENT
+-- À exécuter dans Supabase avant de déployer le code associé.
+-- ============================================================
+
+alter table public.profiles
+  drop constraint if exists profiles_role_check;
+
+alter table public.profiles
+  add constraint profiles_role_check
+  check (role in ('ADMIN', 'COIFFEUR', 'CLIENT'));
+
+create or replace function public.est_client()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where user_id = auth.uid()
+      and role = 'CLIENT'
+  );
+$$;
+
+create or replace function public.est_employe()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where user_id = auth.uid()
+      and role in ('ADMIN', 'COIFFEUR')
+  );
+$$;
+
+-- Les clients sur tablette ne peuvent jamais lire ou modifier la base.
+drop policy if exists "Utilisateurs authentifies peuvent voir les clients"
+on public.clients;
+drop policy if exists "Utilisateurs authentifies peuvent creer des clients"
+on public.clients;
+drop policy if exists "Utilisateurs authentifies peuvent modifier les clients"
+on public.clients;
+drop policy if exists "ADMIN peut supprimer les clients"
+on public.clients;
+
+create policy "Employes peuvent voir les clients"
+on public.clients for select to authenticated
+using (public.est_employe());
+
+create policy "Employes peuvent creer des clients"
+on public.clients for insert to authenticated
+with check (public.est_employe());
+
+create policy "Employes peuvent modifier les clients"
+on public.clients for update to authenticated
+using (public.est_employe())
+with check (public.est_employe());
+
+create policy "ADMIN peut supprimer les clients"
+on public.clients for delete to authenticated
+using (public.est_admin());
+
+drop policy if exists "Utilisateurs authentifies peuvent voir les localisations"
+on public.client_localisations;
+drop policy if exists "Utilisateurs authentifies peuvent creer des localisations"
+on public.client_localisations;
+drop policy if exists "Utilisateurs authentifies peuvent modifier les localisations"
+on public.client_localisations;
+drop policy if exists "Utilisateurs authentifies peuvent supprimer les localisations"
+on public.client_localisations;
+
+create policy "Employes peuvent voir les localisations"
+on public.client_localisations for select to authenticated
+using (public.est_employe());
+
+create policy "Employes peuvent creer des localisations"
+on public.client_localisations for insert to authenticated
+with check (public.est_employe());
+
+create policy "Employes peuvent modifier les localisations"
+on public.client_localisations for update to authenticated
+using (public.est_employe())
+with check (public.est_employe());
+
+create policy "Employes peuvent supprimer les localisations"
+on public.client_localisations for delete to authenticated
+using (public.est_employe());
+
+create or replace function public.inscrire_client(
+  p_prenom text,
+  p_nom text,
+  p_pseudo text,
+  p_telephone text,
+  p_email text,
+  p_date_naissance date,
+  p_sexe text,
+  p_reseaux_sociaux text,
+  p_notes text,
+  p_sms_consentement boolean,
+  p_localisations jsonb default '[]'::jsonb
+)
+returns table(numero_client bigint)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  nouveau_client public.clients;
+begin
+  if not public.est_client() then
+    raise exception 'Accès non autorisé';
+  end if;
+
+  insert into public.clients (
+    prenom, nom, pseudo, telephone, email, date_naissance, sexe,
+    categorie, reseaux_sociaux, notes, sms_consentement, sms_consentement_date
+  ) values (
+    nullif(trim(p_prenom), ''),
+    nullif(trim(p_nom), ''),
+    nullif(trim(p_pseudo), ''),
+    nullif(trim(p_telephone), ''),
+    nullif(trim(p_email), ''),
+    p_date_naissance,
+    nullif(trim(p_sexe), ''),
+    'Client',
+    nullif(trim(p_reseaux_sociaux), ''),
+    nullif(trim(p_notes), ''),
+    coalesce(p_sms_consentement, false),
+    case when coalesce(p_sms_consentement, false) then now() else null end
+  )
+  returning * into nouveau_client;
+
+  insert into public.client_localisations (client_id, pays, ville)
+  select
+    nouveau_client.id,
+    trim(localisation ->> 'pays'),
+    nullif(trim(localisation ->> 'ville'), '')
+  from jsonb_array_elements(coalesce(p_localisations, '[]'::jsonb)) localisation
+  where length(trim(coalesce(localisation ->> 'pays', ''))) > 0;
+
+  return query select nouveau_client.numero_client;
+end;
+$$;
+
+revoke all on function public.inscrire_client(
+  text, text, text, text, text, date, text, text, text, boolean, jsonb
+) from public;
+
+grant execute on function public.inscrire_client(
+  text, text, text, text, text, date, text, text, text, boolean, jsonb
+) to authenticated;

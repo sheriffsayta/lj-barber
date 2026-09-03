@@ -12,9 +12,25 @@ export type Client =
   sexe: string | null;
   categorie: string;
   notes: string | null;
+  pseudo: string | null;
+  reseaux_sociaux: string | null;
   sms_consentement: boolean;
   sms_consentement_date: string | null;
   date_suppression: string | null;
+  localisations?: Localisation[];
+};
+
+export type Localisation = {
+  id: string;
+  client_id: string;
+  pays: string;
+  ville: string | null;
+};
+
+export type LocalisationInput = {
+  id?: string;
+  pays: string;
+  ville: string;
 };
 
 /**
@@ -31,8 +47,38 @@ export type ClientInput = {
   sexe: string;
   categorie: string;
   notes: string;
+  pseudo: string;
+  reseauxSociaux: string;
+  localisations: LocalisationInput[];
   smsConsentement: boolean;
 };
+
+export async function inscrireClient(
+  donnees: ClientInput
+)
+{
+  const { data, error } = await supabase.rpc("inscrire_client", {
+    p_prenom: donnees.prenom,
+    p_nom: donnees.nom,
+    p_pseudo: donnees.pseudo,
+    p_telephone: donnees.telephone,
+    p_email: donnees.email,
+    p_date_naissance: donnees.dateNaissance || null,
+    p_sexe: donnees.sexe || null,
+    p_reseaux_sociaux: donnees.reseauxSociaux,
+    p_notes: donnees.notes,
+    p_sms_consentement: donnees.smsConsentement,
+    p_localisations: donnees.localisations
+  });
+
+  if (error)
+  {
+    console.error("Erreur inscription client :", error);
+    throw new Error("Impossible d'enregistrer l'inscription.");
+  }
+
+  return data?.[0]?.numero_client as number;
+}
 
 export type Prestation = 
 {
@@ -55,7 +101,7 @@ export async function rechercherClients(
 
   let requete = supabase
     .from("clients")
-    .select("*")
+    .select("*, localisations:client_localisations(*)")
     .is("date_suppression", null)
     .order("numero_client", {
       ascending: true
@@ -101,7 +147,7 @@ export async function recupererClient(
     error
   } = await supabase
     .from("clients")
-    .select("*")
+    .select("*, localisations:client_localisations(*)")
     .eq("id", id)
     .is("date_suppression", null)
     .single();
@@ -121,6 +167,103 @@ export async function recupererClient(
   return data;
 }
 
+function normaliserLocalisations(
+  localisations: LocalisationInput[]
+)
+{
+  return localisations
+    .map((localisation) => ({
+      ...localisation,
+      pays: localisation.pays.trim(),
+      ville: localisation.ville.trim()
+    }))
+    .filter((localisation) => localisation.pays);
+}
+
+async function synchroniserLocalisations(
+  clientId: string,
+  localisations: LocalisationInput[]
+)
+{
+  const { data: existantes, error: erreurLecture } = await supabase
+    .from("client_localisations")
+    .select("*")
+    .eq("client_id", clientId);
+
+  if (erreurLecture)
+  {
+    throw new Error("Impossible de récupérer les localisations.");
+  }
+
+  const nouvelles = normaliserLocalisations(localisations);
+  const existantesParId = new Map(
+    (existantes ?? []).map((localisation) => [localisation.id, localisation])
+  );
+  const idsConserves = new Set(
+    nouvelles.flatMap((localisation) => localisation.id ? [localisation.id] : [])
+  );
+  const ajouts = nouvelles.filter((localisation) => !localisation.id);
+
+  if (ajouts.length > 0)
+  {
+    const { error } = await supabase
+      .from("client_localisations")
+      .insert(ajouts.map(({ pays, ville }) => ({
+        client_id: clientId,
+        pays,
+        ville: ville || null
+      })));
+
+    if (error)
+    {
+      throw new Error("Impossible d'ajouter les localisations.");
+    }
+  }
+
+  for (const localisation of nouvelles)
+  {
+    const existante = localisation.id
+      ? existantesParId.get(localisation.id)
+      : undefined;
+
+    if (!existante ||
+      (existante.pays === localisation.pays &&
+        (existante.ville ?? "") === localisation.ville))
+    {
+      continue;
+    }
+
+    const { error } = await supabase
+      .from("client_localisations")
+      .update({ pays: localisation.pays, ville: localisation.ville || null })
+      .eq("id", localisation.id)
+      .eq("client_id", clientId);
+
+    if (error)
+    {
+      throw new Error("Impossible de modifier une localisation.");
+    }
+  }
+
+  const idsASupprimer = (existantes ?? [])
+    .filter((localisation) => !idsConserves.has(localisation.id))
+    .map((localisation) => localisation.id);
+
+  if (idsASupprimer.length > 0)
+  {
+    const { error } = await supabase
+      .from("client_localisations")
+      .delete()
+      .in("id", idsASupprimer)
+      .eq("client_id", clientId);
+
+    if (error)
+    {
+      throw new Error("Impossible de supprimer une localisation.");
+    }
+  }
+}
+
 
 // Ajouter un client
 export async function ajouterClient(
@@ -133,12 +276,16 @@ export async function ajouterClient(
     sexe,
     categorie,
     notes,
+    pseudo,
+    reseauxSociaux,
+    localisations,
     smsConsentement
   }: ClientInput
 )
 {
   const
   {
+    data: client,
     error
   } = await supabase
     .from("clients")
@@ -153,6 +300,8 @@ export async function ajouterClient(
         sexe: sexe || null,
         categorie,
         notes: notes || null,
+        pseudo: pseudo || null,
+        reseaux_sociaux: reseauxSociaux || null,
         sms_consentement:
           smsConsentement,
         sms_consentement_date:
@@ -160,7 +309,9 @@ export async function ajouterClient(
             ? new Date().toISOString()
             : null
       }
-    );
+    )
+    .select("id")
+    .single();
 
   if (error)
   {
@@ -173,6 +324,8 @@ export async function ajouterClient(
       "Impossible d'ajouter le client."
     );
   }
+
+  await synchroniserLocalisations(client.id, localisations);
 }
 
 
@@ -188,6 +341,9 @@ export async function modifierClient(
     sexe,
     categorie,
     notes,
+    pseudo,
+    reseauxSociaux,
+    localisations,
     smsConsentement
   }: ClientInput,
   ancienConsentementSms: boolean
@@ -204,6 +360,8 @@ export async function modifierClient(
     sexe: sexe || null,
     categorie,
     notes: notes || null,
+    pseudo: pseudo || null,
+    reseaux_sociaux: reseauxSociaux || null,
     sms_consentement: smsConsentement,
     ...(consentementModifie && {
       sms_consentement_date: smsConsentement
@@ -233,6 +391,8 @@ export async function modifierClient(
       "Impossible de modifier le client."
     );
   }
+
+  await synchroniserLocalisations(id, localisations);
 }
 
 

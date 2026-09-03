@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Sidebar from "@/ui/Sidebar";
+import RoleGuard from "@/ui/auth/RoleGuard";
 
 type Profile =
 {
@@ -10,7 +11,7 @@ type Profile =
   role: "ADMIN" | "COIFFEUR";
 };
 
-export default function Dashboard()
+function DashboardContent()
 {
   const [profile, setProfile] =
     useState<Profile | null>(null);
@@ -243,4 +244,9 @@ export default function Dashboard()
 
     </main>
   );
+}
+
+export default function Dashboard()
+{
+  return <RoleGuard roles={["ADMIN", "COIFFEUR"]}><DashboardContent /></RoleGuard>;
 }

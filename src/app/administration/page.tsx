@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Sidebar from "@/ui/Sidebar";
+import RoleGuard from "@/ui/auth/RoleGuard";
 
 type Role = "ADMIN" | "COIFFEUR";
 
@@ -12,7 +13,7 @@ type Profile = {
   role: Role;
 };
 
-export default function Administration() {
+function AdministrationContent() {
   const [profilActuel, setProfilActuel] =
     useState<Profile | null>(null);
 
@@ -154,7 +155,7 @@ export default function Administration() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-950 px-4 text-white">
         <p className="text-center">
-          Chargement de l'administration...
+          Chargement de l&apos;administration...
         </p>
       </main>
     );
@@ -184,7 +185,7 @@ export default function Administration() {
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-400 sm:text-base">
-              Gestion des utilisateurs et des droits d'accès.
+              Gestion des utilisateurs et des droits d&apos;accès.
             </p>
 
           </header>
@@ -408,4 +409,9 @@ export default function Administration() {
 
     </main>
   );
+}
+
+export default function Administration()
+{
+  return <RoleGuard roles={["ADMIN"]}><AdministrationContent /></RoleGuard>;
 }

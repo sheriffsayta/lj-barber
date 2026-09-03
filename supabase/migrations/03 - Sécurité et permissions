@@ -1,0 +1,231 @@
+-- ============================================================
+-- LJ BARBER
+-- 03 - SÉCURITÉ ET PERMISSIONS
+-- ============================================================
+
+
+-- ============================================================
+-- FONCTION : vérifier si l'utilisateur connecté est ADMIN
+-- ============================================================
+
+create or replace function public.est_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where user_id = auth.uid()
+      and role = 'ADMIN'
+  );
+$$;
+
+
+-- ============================================================
+-- PROFILES
+-- ============================================================
+
+alter table public.profiles
+enable row level security;
+
+grant select, update
+on public.profiles
+to authenticated;
+
+
+-- Anciennes policies
+
+drop policy if exists "Utilisateurs peuvent voir leur profil"
+on public.profiles;
+
+drop policy if exists "Utilisateurs peuvent voir les profils"
+on public.profiles;
+
+drop policy if exists "ADMIN peut voir tous les profils"
+on public.profiles;
+
+drop policy if exists "ADMIN peut modifier les profils"
+on public.profiles;
+
+
+-- Un utilisateur peut voir son propre profil
+
+create policy "Utilisateurs peuvent voir leur profil"
+on public.profiles
+for select
+to authenticated
+using (
+  user_id = auth.uid()
+);
+
+
+-- Un ADMIN peut voir tous les profils
+
+create policy "ADMIN peut voir tous les profils"
+on public.profiles
+for select
+to authenticated
+using (
+  public.est_admin()
+);
+
+
+-- Seul un ADMIN peut modifier les profils
+
+create policy "ADMIN peut modifier les profils"
+on public.profiles
+for update
+to authenticated
+using (
+  public.est_admin()
+)
+with check (
+  public.est_admin()
+);
+
+
+-- ============================================================
+-- CLIENTS
+-- ============================================================
+
+alter table public.clients
+enable row level security;
+
+grant select, insert, update, delete
+on public.clients
+to authenticated;
+
+
+drop policy if exists "Utilisateurs authentifies peuvent voir les clients"
+on public.clients;
+
+drop policy if exists "Utilisateurs authentifies peuvent creer des clients"
+on public.clients;
+
+drop policy if exists "Utilisateurs authentifies peuvent modifier les clients"
+on public.clients;
+
+drop policy if exists "Utilisateurs authentifies peuvent supprimer les clients"
+on public.clients;
+
+
+-- Voir les clients : ADMIN + COIFFEUR
+
+create policy "Utilisateurs authentifies peuvent voir les clients"
+on public.clients
+for select
+to authenticated
+using (
+  true
+);
+
+
+-- Ajouter un client : ADMIN + COIFFEUR
+
+create policy "Utilisateurs authentifies peuvent creer des clients"
+on public.clients
+for insert
+to authenticated
+with check (
+  true
+);
+
+
+-- Modifier un client : ADMIN + COIFFEUR
+
+create policy "Utilisateurs authentifies peuvent modifier les clients"
+on public.clients
+for update
+to authenticated
+using (
+  true
+)
+with check (
+  true
+);
+
+
+-- Supprimer définitivement : ADMIN uniquement
+
+create policy "ADMIN peut supprimer les clients"
+on public.clients
+for delete
+to authenticated
+using (
+  public.est_admin()
+);
+
+
+-- ============================================================
+-- PRESTATIONS
+-- ============================================================
+
+alter table public.prestations
+enable row level security;
+
+grant select, insert, update, delete
+on public.prestations
+to authenticated;
+
+
+drop policy if exists "Utilisateurs authentifies peuvent voir les prestations"
+on public.prestations;
+
+drop policy if exists "Utilisateurs authentifies peuvent creer des prestations"
+on public.prestations;
+
+drop policy if exists "Utilisateurs authentifies peuvent modifier les prestations"
+on public.prestations;
+
+drop policy if exists "Utilisateurs authentifies peuvent supprimer les prestations"
+on public.prestations;
+
+
+-- Voir les prestations
+
+create policy "Utilisateurs authentifies peuvent voir les prestations"
+on public.prestations
+for select
+to authenticated
+using (
+  true
+);
+
+
+-- Ajouter une prestation
+
+create policy "Utilisateurs authentifies peuvent creer des prestations"
+on public.prestations
+for insert
+to authenticated
+with check (
+  true
+);
+
+
+-- Modifier une prestation
+
+create policy "Utilisateurs authentifies peuvent modifier les prestations"
+on public.prestations
+for update
+to authenticated
+using (
+  true
+)
+with check (
+  true
+);
+
+
+-- Supprimer une prestation : ADMIN uniquement
+
+create policy "ADMIN peut supprimer les prestations"
+on public.prestations
+for delete
+to authenticated
+using (
+  public.est_admin()
+);

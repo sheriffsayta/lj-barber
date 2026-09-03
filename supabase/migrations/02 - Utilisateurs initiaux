@@ -1,0 +1,68 @@
+-- ============================================================
+-- LJ BARBER
+-- 02 - UTILISATEURS INITIAUX
+-- ============================================================
+
+
+-- ============================================================
+-- ADMINISTRATEUR PRINCIPAL
+-- ============================================================
+--
+-- IMPORTANT :
+-- Le compte ADMIN doit d'abord être créé dans :
+-- Supabase → Authentication → Users
+--
+-- Remplace l'adresse ci-dessous par l'adresse de ton compte ADMIN.
+-- ============================================================
+
+insert into public.profiles (
+    user_id,
+    nom,
+    role
+)
+select
+    id,
+    'Administrateur',
+    'ADMIN'
+from auth.users
+where email = 'sheriffsayta@outlook.fr'
+on conflict (user_id)
+do update set
+    nom = 'Administrateur',
+    role = 'ADMIN';
+
+
+-- ============================================================
+-- COIFFEUR DE TEST
+-- ============================================================
+--
+-- Ce compte doit également être créé dans :
+-- Supabase → Authentication → Users
+--
+-- Exemple :
+-- Email : test@ljbarber.fr
+--
+-- Le profil sera automatiquement créé ou mis à jour
+-- avec le rôle COIFFEUR.
+-- ============================================================
+
+insert into public.profiles (
+    user_id,
+    nom,
+    role
+)
+select
+    id,
+    'Coiffeur Test',
+    'COIFFEUR'
+from auth.users
+where email = 'test@ljbarber.fr'
+on conflict (user_id)
+do update set
+    nom = 'Coiffeur Test',
+    role = 'COIFFEUR';
+
+
+-- ============================================================
+-- FIN
+-- ============================================================

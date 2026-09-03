@@ -1,0 +1,113 @@
+-- ============================================================
+-- SALON CRM - STRUCTURE DE BASE
+-- ============================================================
+
+-- Extension nécessaire pour générer des UUID
+create extension if not exists pgcrypto;
+
+
+-- ============================================================
+-- TABLE CLIENTS
+-- ============================================================
+
+create table public.clients (
+    id uuid primary key default gen_random_uuid(),
+
+    -- Numéro client visible par le coiffeur
+    numero_client bigint generated always as identity unique,
+
+    prenom text not null,
+    nom text not null,
+
+    telephone text not null,
+    email text,
+
+    date_naissance date,
+
+    sexe text,
+
+    categorie text not null default 'Client',
+
+    notes text,
+
+    -- Consentement SMS
+    sms_consentement boolean not null default false,
+    sms_consentement_date timestamptz,
+
+    -- Désinscription éventuelle des SMS
+    sms_desinscrit boolean not null default false,
+
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+
+    constraint clients_sexe_check
+        check (sexe is null or sexe in ('Homme', 'Femme', 'Non renseigné')),
+
+    constraint clients_categorie_check
+        check (categorie in ('Client', 'VIP', 'Ancien client', 'Proche'))
+);
+
+
+-- ============================================================
+-- TABLE VISITES
+-- ============================================================
+
+create table public.visites (
+    id uuid primary key default gen_random_uuid(),
+
+    client_id uuid not null
+        references public.clients(id)
+        on delete cascade,
+
+    date_visite date not null,
+
+    created_at timestamptz not null default now()
+);
+
+
+-- ============================================================
+-- INDEX POUR LES RECHERCHES
+-- ============================================================
+
+create index clients_nom_idx
+    on public.clients(nom);
+
+create index clients_prenom_idx
+    on public.clients(prenom);
+
+create index clients_telephone_idx
+    on public.clients(telephone);
+
+create index visites_client_id_idx
+    on public.visites(client_id);
+
+create index visites_date_idx
+    on public.visites(date_visite);
+
+
+-- ============================================================
+-- ROW LEVEL SECURITY
+-- ============================================================
+
+alter table public.clients enable row level security;
+alter table public.visites enable row level security;
+
+
+-- ============================================================
+-- TRIGGER POUR updated_at
+-- ============================================================
+
+create or replace function public.update_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+    new.updated_at = now();
+    return new;
+end;
+$$;
+
+create trigger clients_updated_at
+before update on public.clients
+for each row
+execute function public.update_updated_at();

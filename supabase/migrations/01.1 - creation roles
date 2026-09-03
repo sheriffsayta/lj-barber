@@ -1,0 +1,37 @@
+-- ============================================================
+-- SALON CRM - PROFILS UTILISATEURS
+-- ============================================================
+
+create table public.profiles (
+    user_id uuid primary key
+        references auth.users(id)
+        on delete cascade,
+
+    nom text not null,
+
+    role text not null default 'COIFFEUR',
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now(),
+
+    constraint profiles_role_check
+        check (role in ('ADMIN', 'COIFFEUR'))
+);
+
+
+-- ============================================================
+-- ROW LEVEL SECURITY
+-- ============================================================
+
+alter table public.profiles enable row level security;
+
+
+-- ============================================================
+-- TRIGGER updated_at
+-- ============================================================
+
+create trigger profiles_updated_at
+before update on public.profiles
+for each row
+execute function public.update_updated_at();

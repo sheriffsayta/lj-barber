@@ -1,0 +1,69 @@
+-- ============================================================
+-- LJ BARBER - PROFIL CLIENT ET LOCALISATIONS
+-- À exécuter dans Supabase avant de déployer le code associé.
+-- ============================================================
+
+alter table public.clients
+  add column if not exists pseudo text,
+  add column if not exists reseaux_sociaux text;
+
+create table if not exists public.client_localisations (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null
+    references public.clients(id)
+    on delete cascade,
+  pays text not null,
+  ville text,
+  created_at timestamptz not null default now(),
+
+  constraint client_localisations_pays_non_vide
+    check (length(trim(pays)) > 0),
+  constraint client_localisations_ville_non_vide
+    check (ville is null or length(trim(ville)) > 0)
+);
+
+create index if not exists client_localisations_client_id_idx
+  on public.client_localisations(client_id);
+
+alter table public.client_localisations enable row level security;
+
+grant select, insert, update, delete
+on public.client_localisations
+to authenticated;
+
+drop policy if exists "Utilisateurs authentifies peuvent voir les localisations"
+on public.client_localisations;
+
+drop policy if exists "Utilisateurs authentifies peuvent creer des localisations"
+on public.client_localisations;
+
+drop policy if exists "Utilisateurs authentifies peuvent modifier les localisations"
+on public.client_localisations;
+
+drop policy if exists "Utilisateurs authentifies peuvent supprimer les localisations"
+on public.client_localisations;
+
+create policy "Utilisateurs authentifies peuvent voir les localisations"
+on public.client_localisations
+for select
+to authenticated
+using (true);
+
+create policy "Utilisateurs authentifies peuvent creer des localisations"
+on public.client_localisations
+for insert
+to authenticated
+with check (true);
+
+create policy "Utilisateurs authentifies peuvent modifier les localisations"
+on public.client_localisations
+for update
+to authenticated
+using (true)
+with check (true);
+
+create policy "Utilisateurs authentifies peuvent supprimer les localisations"
+on public.client_localisations
+for delete
+to authenticated
+using (true);

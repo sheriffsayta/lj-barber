@@ -11,6 +11,26 @@ export default function Home() {
   const [connexion, setConnexion] = useState(false);
   const [message, setMessage] = useState("");
 
+  async function redirigerSelonRole() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return;
+    }
+
+    const { data } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    window.location.href = data?.role === "CLIENT"
+      ? "/inscription"
+      : "/dashboard";
+  }
+
   useEffect(() => {
     async function verifierConnexion() {
       const {
@@ -18,7 +38,7 @@ export default function Home() {
       } = await supabase.auth.getSession();
 
       if (session?.user) {
-        window.location.href = "/dashboard";
+        await redirigerSelonRole();
         return;
       }
 
@@ -51,7 +71,7 @@ export default function Home() {
       return;
     }
 
-    window.location.href = "/dashboard";
+    await redirigerSelonRole();
   }
 
   if (loading) {

@@ -3,17 +3,26 @@
 import { FormEvent, useState } from "react";
 import {
   ajouterClient,
+  inscrireClient,
   modifierClient,
   type Client,
-  type ClientInput
+  type ClientInput,
+  type LocalisationInput
 } from "@/lib/clients";
+
+const paysSuggestions = [
+  "France", "Belgique", "Suisse", "Luxembourg", "Canada",
+  "Maroc", "Algérie", "Tunisie", "Sénégal", "Côte d’Ivoire"
+];
 
 type ClientFormProps =
 {
   client?: Client;
   onClientAjoute?: () => void;
   onClientModifie?: () => void;
+  onClientInscrit?: (numeroClient: number) => void;
   onFermer?: () => void;
+  mode?: "interne" | "inscription";
 };
 
 export default function ClientForm(
@@ -21,7 +30,9 @@ export default function ClientForm(
     client,
     onClientAjoute,
     onClientModifie,
-    onFermer
+    onClientInscrit,
+    onFermer,
+    mode = "interne"
   }: ClientFormProps
 )
 {
@@ -31,6 +42,10 @@ export default function ClientForm(
 
   const [nom, setNom] = useState(
     client?.nom ?? ""
+  );
+
+  const [pseudo, setPseudo] = useState(
+    client?.pseudo ?? ""
   );
 
   const [telephone, setTelephone] = useState(
@@ -57,6 +72,18 @@ export default function ClientForm(
     client?.notes ?? ""
   );
 
+  const [reseauxSociaux, setReseauxSociaux] = useState(
+    client?.reseaux_sociaux ?? ""
+  );
+
+  const [localisations, setLocalisations] = useState<LocalisationInput[]>(
+    client?.localisations?.map(({ id, pays, ville }) => ({
+      id,
+      pays,
+      ville: ville ?? ""
+    })) ?? []
+  );
+
   const [smsConsentement, setSmsConsentement] = useState(
     client?.sms_consentement ?? false
   );
@@ -65,6 +92,7 @@ export default function ClientForm(
   const [erreur, setErreur] = useState("");
 
   const modification = Boolean(client);
+  const inscription = mode === "inscription";
 
   const donneesClient: ClientInput = {
     prenom,
@@ -75,8 +103,39 @@ export default function ClientForm(
     sexe,
     categorie,
     notes,
+    pseudo,
+    reseauxSociaux,
+    localisations,
     smsConsentement
   };
+
+  function ajouterLocalisation()
+  {
+    setLocalisations((liste) => [
+      ...liste,
+      { pays: "", ville: "" }
+    ]);
+  }
+
+  function modifierLocalisation(
+    index: number,
+    champ: "pays" | "ville",
+    valeur: string
+  )
+  {
+    setLocalisations((liste) => liste.map((localisation, position) =>
+      position === index
+        ? { ...localisation, [champ]: valeur }
+        : localisation
+    ));
+  }
+
+  function supprimerLocalisation(index: number)
+  {
+    setLocalisations((liste) =>
+      liste.filter((_, position) => position !== index)
+    );
+  }
 
   async function enregistrer(
     event: FormEvent<HTMLFormElement>
@@ -98,6 +157,11 @@ export default function ClientForm(
         );
 
         onClientModifie?.();
+      }
+      else if (inscription)
+      {
+        const numeroClient = await inscrireClient(donneesClient);
+        onClientInscrit?.(numeroClient);
       }
       else
       {
@@ -160,6 +224,22 @@ export default function ClientForm(
               setNom(event.target.value);
             }}
             required
+            className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none focus:ring-2"
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium">
+            Pseudo
+          </label>
+
+          <input
+            type="text"
+            value={pseudo}
+            onChange={(event) =>
+            {
+              setPseudo(event.target.value);
+            }}
             className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none focus:ring-2"
           />
         </div>
@@ -240,6 +320,7 @@ export default function ClientForm(
           </select>
         </div>
 
+        {!inscription && (
         <div>
           <label className="mb-2 block text-sm font-medium">
             Catégorie
@@ -270,7 +351,85 @@ export default function ClientForm(
             </option>
           </select>
         </div>
+        )}
 
+      </div>
+
+      <div>
+        <label className="mb-2 block text-sm font-medium">
+          Réseaux sociaux
+        </label>
+
+        <input
+          type="text"
+          value={reseauxSociaux}
+          onChange={(event) =>
+          {
+            setReseauxSociaux(event.target.value);
+          }}
+          placeholder="Instagram, Snapchat, @pseudo…"
+          className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:ring-2"
+        />
+      </div>
+
+      <div className="rounded-xl border border-gray-800 p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h3 className="font-medium">Pays et villes de résidence</h3>
+            <p className="mt-1 text-sm text-gray-400">
+              Facultatif : ajoutez autant de résidences que nécessaire.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={ajouterLocalisation}
+            className="shrink-0 rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 hover:bg-gray-800"
+          >
+            + Ajouter
+          </button>
+        </div>
+
+        <datalist id="pays-residence">
+          {paysSuggestions.map((pays) => (
+            <option key={pays} value={pays} />
+          ))}
+        </datalist>
+
+        <div className="mt-4 space-y-3">
+          {localisations.map((localisation, index) => (
+            <div key={localisation.id ?? index} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+              <input
+                type="text"
+                list="pays-residence"
+                value={localisation.pays}
+                onChange={(event) =>
+                  modifierLocalisation(index, "pays", event.target.value)
+                }
+                placeholder="Pays"
+                className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:ring-2"
+              />
+
+              <input
+                type="text"
+                value={localisation.ville}
+                onChange={(event) =>
+                  modifierLocalisation(index, "ville", event.target.value)
+                }
+                placeholder="Ville"
+                className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:ring-2"
+              />
+
+              <button
+                type="button"
+                onClick={() => supprimerLocalisation(index)}
+                className="rounded-lg border border-red-900 px-3 py-2 text-sm text-red-300 hover:bg-red-950"
+              >
+                Retirer
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div>

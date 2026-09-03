@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import Sidebar from "@/ui/Sidebar";
 import ClientForm from "@/ui/clients/ClientForm";
+import RoleGuard from "@/ui/auth/RoleGuard";
 
 import {
   recupererClient,
@@ -17,7 +18,7 @@ import {
   type Prestation,
 } from "@/lib/clients";
 
-export default function FicheClient() {
+function FicheClientContent() {
   const params = useParams();
   const router = useRouter();
 
@@ -173,7 +174,40 @@ export default function FicheClient() {
   }
 
   useEffect(() => {
-    chargerClient();
+    let actif = true;
+
+    async function charger() {
+      try {
+        const id = params.id as string;
+        const [data, prestationsData] = await Promise.all([
+          recupererClient(id),
+          recupererPrestations(id)
+        ]);
+
+        if (!actif) {
+          return;
+        }
+
+        setClient(data);
+        setPrestations(prestationsData);
+      } catch (error) {
+        console.error(error);
+
+        if (actif) {
+          setErreur("Impossible de récupérer le client.");
+        }
+      } finally {
+        if (actif) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void charger();
+
+    return () => {
+      actif = false;
+    };
   }, [params.id]);
 
   if (loading) {
@@ -232,6 +266,10 @@ export default function FicheClient() {
             <h1 className="mt-1 break-words text-2xl font-bold sm:text-3xl">
               {client.prenom} {client.nom}
             </h1>
+
+            {client.pseudo && (
+              <p className="mt-1 text-gray-400">@{client.pseudo}</p>
+            )}
           </div>
 
           {erreur && (
@@ -294,6 +332,16 @@ export default function FicheClient() {
 
                   <div>
                     <p className="text-sm text-gray-500">
+                      Réseaux sociaux
+                    </p>
+
+                    <p className="mt-1 break-words">
+                      {client.reseaux_sociaux || "Non renseignés"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-500">
                       Date de naissance
                     </p>
 
@@ -330,6 +378,25 @@ export default function FicheClient() {
                     <p className="mt-1 break-words">
                       {client.notes || "Aucune note"}
                     </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-500">
+                      Résidences
+                    </p>
+
+                    {client.localisations?.length ? (
+                      <ul className="mt-1 space-y-1">
+                        {client.localisations.map((localisation) => (
+                          <li key={localisation.id} className="break-words">
+                            {localisation.pays}
+                            {localisation.ville && ` — ${localisation.ville}`}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-1">Non renseignées</p>
+                    )}
                   </div>
 
                 </div>
@@ -549,4 +616,9 @@ export default function FicheClient() {
 
     </main>
   );
+}
+
+export default function FicheClient()
+{
+  return <RoleGuard roles={["ADMIN", "COIFFEUR"]}><FicheClientContent /></RoleGuard>;
 }
