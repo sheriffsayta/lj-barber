@@ -163,7 +163,7 @@ function AdministrationContent() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-lg font-semibold sm:text-xl">Ajouter un compte</h2>
-                <p className="mt-1 text-sm leading-6 text-gray-400">Crée un accès pour un membre de l'équipe ou la tablette d'inscription.</p>
+                <p className="mt-1 text-sm leading-6 text-gray-400">Crée un accès pour un membre de l&apos;équipe ou la tablette d&apos;inscription.</p>
               </div>
               <button type="button" onClick={() => setCreationOuverte((ouverte) => !ouverte)} className="min-h-11 rounded-xl border border-gray-700 px-4 py-3 text-sm hover:bg-gray-800">
                 {creationOuverte ? "Fermer" : "Ajouter un compte"}

@@ -54,6 +54,20 @@ function clientAuthentification() {
   });
 }
 
+function clientSession(jeton: string) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const clePublique = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!url || !clePublique) {
+    throw new Error("La configuration publique Supabase est incomplète.");
+  }
+
+  return createClient(url, clePublique, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${jeton}` } }
+  });
+}
+
 async function verifierAdministrateur(request: Request): Promise<Autorisation> {
   const jeton = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
 
@@ -61,14 +75,13 @@ async function verifierAdministrateur(request: Request): Promise<Autorisation> {
     return { erreur: "Session manquante.", status: 401 };
   }
 
-  const supabaseAdmin = clientAdministrateur();
   const { data: { user }, error: erreurUtilisateur } = await clientAuthentification().auth.getUser(jeton);
 
   if (erreurUtilisateur || !user) {
     return { erreur: "Session invalide.", status: 401 };
   }
 
-  const { data: profil, error: erreurProfil } = await supabaseAdmin
+  const { data: profil, error: erreurProfil } = await clientSession(jeton)
     .from("profiles")
     .select("user_id, nom, role, created_at")
     .eq("user_id", user.id)
@@ -77,6 +90,8 @@ async function verifierAdministrateur(request: Request): Promise<Autorisation> {
   if (erreurProfil || profil?.role !== "ADMIN") {
     return { erreur: "Accès administrateur requis.", status: 403 };
   }
+
+  const supabaseAdmin = clientAdministrateur();
 
   return { supabaseAdmin, utilisateurActuel: user, profil: profil as Profil };
 }
