@@ -218,7 +218,7 @@ function DashboardContent()
             </div>
 
             <p className="mt-4 text-sm text-gray-400">
-              SMS
+              SMS & e-mails
             </p>
 
             <p className="mt-1 text-3xl font-bold">

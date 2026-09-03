@@ -1,7 +1,7 @@
 import Sidebar from "@/ui/Sidebar";
 import RoleGuard from "@/ui/auth/RoleGuard";
 
-function SMSContent()
+function CommunicationsContent()
 {
   return (
     <main className="min-h-screen overflow-x-hidden bg-gray-950 text-white">
@@ -19,7 +19,7 @@ function SMSContent()
             </div>
 
             <h1 className="mt-5 text-2xl font-bold sm:text-3xl">
-              SMS
+              SMS & e-mails
             </h1>
 
             <p className="mt-3 text-gray-400">
@@ -27,7 +27,7 @@ function SMSContent()
             </p>
 
             <p className="mt-2 text-sm text-gray-500">
-              Le système d&apos;envoi de SMS sera disponible prochainement.
+              Les systèmes d&apos;envoi de SMS et d&apos;e-mails seront disponibles prochainement.
             </p>
 
           </div>
@@ -42,5 +42,5 @@ function SMSContent()
 
 export default function SMS()
 {
-  return <RoleGuard roles={["ADMIN", "COIFFEUR"]}><SMSContent /></RoleGuard>;
+  return <RoleGuard roles={["ADMIN", "COIFFEUR"]}><CommunicationsContent /></RoleGuard>;
 }

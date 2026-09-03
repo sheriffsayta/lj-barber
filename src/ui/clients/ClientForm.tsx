@@ -108,6 +108,10 @@ export default function ClientForm(
     client?.sms_consentement ?? false
   );
 
+  const [emailConsentement, setEmailConsentement] = useState(
+    client?.email_consentement ?? false
+  );
+
   const [enregistrement, setEnregistrement] = useState(false);
   const [erreur, setErreur] = useState("");
 
@@ -126,7 +130,8 @@ export default function ClientForm(
     pseudo,
     reseauxSociaux,
     localisations,
-    smsConsentement
+    smsConsentement,
+    emailConsentement
   };
 
   function ajouterLocalisation()
@@ -173,7 +178,8 @@ export default function ClientForm(
         await modifierClient(
           client.id,
           donneesClient,
-          client.sms_consentement
+          client.sms_consentement,
+          client.email_consentement
         );
 
         onClientModifie?.();
@@ -291,7 +297,13 @@ export default function ClientForm(
             value={email}
             onChange={(event) =>
             {
-              setEmail(event.target.value);
+              const nouvelleAdresse = event.target.value;
+              setEmail(nouvelleAdresse);
+
+              if (!nouvelleAdresse.trim())
+              {
+                setEmailConsentement(false);
+              }
             }}
             className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none focus:ring-2"
           />
@@ -482,6 +494,26 @@ export default function ClientForm(
 
         <span className="text-sm">
           Le client accepte de recevoir des SMS
+        </span>
+
+      </label>
+
+      <label className="flex items-center gap-3">
+
+        <input
+          type="checkbox"
+          checked={emailConsentement}
+          disabled={!email.trim()}
+          onChange={(event) =>
+          {
+            setEmailConsentement(event.target.checked);
+          }}
+          className="h-4 w-4 disabled:opacity-50"
+        />
+
+        <span className="text-sm">
+          Le client accepte de recevoir des e-mails
+          {!email.trim() && " (renseignez d’abord une adresse e-mail)"}
         </span>
 
       </label>

@@ -18,7 +18,7 @@ const liens = [
     href: "/clients",
   },
   {
-    nom: "SMS",
+    nom: "SMS & e-mails",
     emoji: "💬",
     href: "/sms",
   },

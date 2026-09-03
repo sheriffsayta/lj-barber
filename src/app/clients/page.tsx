@@ -57,6 +57,8 @@ function ClientsContent()
 
   const [filtreSms, setFiltreSms] =
     useState<"tous" | "autorise" | "non_autorise">("tous");
+  const [filtreEmail, setFiltreEmail] =
+    useState<"tous" | "autorise" | "non_autorise">("tous");
 
   const [clientsSelectionnes, setClientsSelectionnes] =
     useState<string[]>([]);
@@ -248,7 +250,8 @@ function ClientsContent()
       client.numero_client.toString(),
       formaterNumeroClient(client.numero_client),
       ...(client.localisations ?? []).flatMap(({ pays, ville }) => [pays, ville]),
-      client.sms_consentement ? "sms autorise" : "sms non autorise"
+      client.sms_consentement ? "sms autorise" : "sms non autorise",
+      client.email_consentement ? "email mail autorise" : "email mail non autorise"
     ]
       .filter(Boolean)
       .join(" ")
@@ -267,6 +270,11 @@ function ClientsContent()
       (filtreSms === "autorise" && client.sms_consentement) ||
       (filtreSms === "non_autorise" && !client.sms_consentement);
 
+    const correspondEmail =
+      filtreEmail === "tous" ||
+      (filtreEmail === "autorise" && client.email_consentement) ||
+      (filtreEmail === "non_autorise" && !client.email_consentement);
+
     const correspondPays = paysSelectionnes.length === 0 ||
       client.localisations?.some(({ pays }) => paysSelectionnes.includes(pays));
     const correspondVille = villesSelectionnees.length === 0 ||
@@ -276,6 +284,7 @@ function ClientsContent()
       correspondRecherche &&
       correspondCategorie &&
       correspondSms &&
+      correspondEmail &&
       correspondPays &&
       correspondVille
     );
@@ -588,10 +597,28 @@ function ClientsContent()
                     </option>
                   </select>
 
+                  <select
+                    value={filtreEmail}
+                    onChange={(event) =>
+                      setFiltreEmail(
+                        event.target.value as
+                          | "tous"
+                          | "autorise"
+                          | "non_autorise"
+                      )
+                    }
+                    className="min-h-11 rounded-lg border border-gray-700 bg-gray-950 px-4 py-3 text-sm text-gray-300 outline-none"
+                  >
+                    <option value="tous">Tous les e-mails</option>
+                    <option value="autorise">E-mails autorisés</option>
+                    <option value="non_autorise">E-mails non autorisés</option>
+                  </select>
+
                   {(categoriesSelectionnees.length > 0 ||
                     paysSelectionnes.length > 0 ||
                     villesSelectionnees.length > 0 ||
                     filtreSms !== "tous" ||
+                    filtreEmail !== "tous" ||
                     recherche) && (
                     <button
                       onClick={() =>
@@ -601,6 +628,7 @@ function ClientsContent()
                         setPaysSelectionnes([]);
                         setVillesSelectionnees([]);
                         setFiltreSms("tous");
+                        setFiltreEmail("tous");
                       }}
                       className="min-h-11 rounded-lg border border-gray-700 px-4 py-3 text-sm text-gray-400 hover:bg-gray-800 hover:text-white"
                     >
@@ -733,6 +761,16 @@ function ClientsContent()
                               </span>
                             )}
 
+                            {client.email_consentement ? (
+                              <span className="ml-2 mt-3 inline-flex rounded-full bg-green-950 px-2.5 py-1 text-xs text-green-400">
+                                ✓ E-mail autorisé
+                              </span>
+                            ) : (
+                              <span className="ml-2 mt-3 inline-flex rounded-full bg-gray-800 px-2.5 py-1 text-xs text-gray-500">
+                                ✕ E-mail non autorisé
+                              </span>
+                            )}
+
                           </button>
 
                         </div>
@@ -799,7 +837,7 @@ function ClientsContent()
                           </th>
 
                           <th className="px-5 py-4 text-sm text-gray-400">
-                            Téléphone / SMS
+                            Téléphone / consentements
                           </th>
 
                           <th className="px-5 py-4 text-sm text-gray-400">
@@ -875,6 +913,16 @@ function ClientsContent()
                               ) : (
                                 <span className="mt-1 inline-flex rounded-full bg-gray-800 px-2 py-1 text-xs text-gray-500">
                                   ✕ SMS non autorisé
+                                </span>
+                              )}
+
+                              {client.email_consentement ? (
+                                <span className="ml-2 mt-1 inline-flex rounded-full bg-green-950 px-2 py-1 text-xs text-green-400">
+                                  ✓ E-mail autorisé
+                                </span>
+                              ) : (
+                                <span className="ml-2 mt-1 inline-flex rounded-full bg-gray-800 px-2 py-1 text-xs text-gray-500">
+                                  ✕ E-mail non autorisé
                                 </span>
                               )}
 

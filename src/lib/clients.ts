@@ -16,6 +16,8 @@ export type Client =
   reseaux_sociaux: string | null;
   sms_consentement: boolean;
   sms_consentement_date: string | null;
+  email_consentement: boolean;
+  email_consentement_date: string | null;
   date_suppression: string | null;
   localisations?: Localisation[];
 };
@@ -51,6 +53,7 @@ export type ClientInput = {
   reseauxSociaux: string;
   localisations: LocalisationInput[];
   smsConsentement: boolean;
+  emailConsentement: boolean;
 };
 
 export async function inscrireClient(
@@ -68,6 +71,7 @@ export async function inscrireClient(
     p_reseaux_sociaux: donnees.reseauxSociaux,
     p_notes: donnees.notes,
     p_sms_consentement: donnees.smsConsentement,
+    p_email_consentement: donnees.emailConsentement,
     p_localisations: donnees.localisations
   });
 
@@ -279,7 +283,8 @@ export async function ajouterClient(
     pseudo,
     reseauxSociaux,
     localisations,
-    smsConsentement
+    smsConsentement,
+    emailConsentement
   }: ClientInput
 )
 {
@@ -306,6 +311,11 @@ export async function ajouterClient(
           smsConsentement,
         sms_consentement_date:
           smsConsentement
+            ? new Date().toISOString()
+            : null,
+        email_consentement: emailConsentement,
+        email_consentement_date:
+          emailConsentement
             ? new Date().toISOString()
             : null
       }
@@ -344,12 +354,15 @@ export async function modifierClient(
     pseudo,
     reseauxSociaux,
     localisations,
-    smsConsentement
+    smsConsentement,
+    emailConsentement
   }: ClientInput,
-  ancienConsentementSms: boolean
+  ancienConsentementSms: boolean,
+  ancienConsentementEmail: boolean
 )
 {
-  const consentementModifie = smsConsentement !== ancienConsentementSms;
+  const consentementSmsModifie = smsConsentement !== ancienConsentementSms;
+  const consentementEmailModifie = emailConsentement !== ancienConsentementEmail;
 
   const modification = {
     prenom,
@@ -363,8 +376,14 @@ export async function modifierClient(
     pseudo: pseudo || null,
     reseaux_sociaux: reseauxSociaux || null,
     sms_consentement: smsConsentement,
-    ...(consentementModifie && {
+    ...(consentementSmsModifie && {
       sms_consentement_date: smsConsentement
+        ? new Date().toISOString()
+        : null
+    }),
+    email_consentement: emailConsentement,
+    ...(consentementEmailModifie && {
+      email_consentement_date: emailConsentement
         ? new Date().toISOString()
         : null
     })

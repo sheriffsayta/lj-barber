@@ -333,6 +333,20 @@ function FicheClientContent() {
 
                   <div>
                     <p className="text-sm text-gray-500">
+                      Consentements de communication
+                    </p>
+
+                    <p className="mt-1">
+                      SMS : {client.sms_consentement ? "autorisé" : "non autorisé"}
+                    </p>
+
+                    <p className="mt-1">
+                      E-mail : {client.email_consentement ? "autorisé" : "non autorisé"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-500">
                       Réseaux sociaux
                     </p>
 
