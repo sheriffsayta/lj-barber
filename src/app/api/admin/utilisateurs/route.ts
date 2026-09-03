@@ -7,6 +7,7 @@ type Profil = {
   nom: string;
   role: Role;
   created_at: string;
+  acces_chiffre_affaires: boolean;
 };
 
 type SupabaseAdmin = ReturnType<typeof clientAdministrateur>;
@@ -84,7 +85,7 @@ async function verifierAdministrateur(request: Request): Promise<Autorisation> {
 
   const { data: profil, error: erreurProfil } = await clientSession(jeton)
     .from("profiles")
-    .select("user_id, nom, role, created_at")
+    .select("user_id, nom, role, created_at, acces_chiffre_affaires")
     .eq("user_id", user.id)
     .single();
 
@@ -99,7 +100,7 @@ async function verifierAdministrateur(request: Request): Promise<Autorisation> {
 
 async function utilisateursAvecProfils(supabaseAdmin: ReturnType<typeof clientAdministrateur>) {
   const [{ data: profils, error: erreurProfils }, { data: authData, error: erreurAuth }] = await Promise.all([
-    supabaseAdmin.from("profiles").select("user_id, nom, role, created_at").order("created_at"),
+    supabaseAdmin.from("profiles").select("user_id, nom, role, created_at, acces_chiffre_affaires").order("created_at"),
     supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
   ]);
 
@@ -118,7 +119,8 @@ async function utilisateursAvecProfils(supabaseAdmin: ReturnType<typeof clientAd
     nom: profil.nom,
     role: profil.role,
     email: emails.get(profil.user_id) ?? "",
-    createdAt: profil.created_at
+    createdAt: profil.created_at,
+    accesChiffreAffaires: profil.acces_chiffre_affaires
   }));
 }
 
@@ -155,8 +157,12 @@ export async function POST(request: Request) {
     const { supabaseAdmin, utilisateurActuel } = autorisation;
 
     if (donnees.action === "creer") {
-      if (!texteValide(donnees.nom, 2) || !texteValide(donnees.email, 3) || !texteValide(donnees.motDePasse, 8) || !estRole(donnees.role)) {
+      if (!texteValide(donnees.nom, 2) || !texteValide(donnees.email, 3) || !texteValide(donnees.motDePasse, 8) || !estRole(donnees.role) || typeof donnees.accesChiffreAffaires !== "boolean") {
         return reponseErreur("Renseignez un nom, un e-mail, un mot de passe de 8 caractères et un rôle valide.");
+      }
+
+      if (donnees.role === "CLIENT" && donnees.accesChiffreAffaires) {
+        return reponseErreur("Le compte d'inscription client ne peut pas accéder au chiffre d'affaires.");
       }
 
       const { data: creation, error: erreurCreation } = await supabaseAdmin.auth.admin.createUser({
@@ -172,7 +178,8 @@ export async function POST(request: Request) {
       const { error: erreurProfil } = await supabaseAdmin.from("profiles").insert({
         user_id: creation.user.id,
         nom: donnees.nom.trim(),
-        role: donnees.role
+        role: donnees.role,
+        acces_chiffre_affaires: donnees.accesChiffreAffaires
       });
 
       if (erreurProfil) {
@@ -186,14 +193,19 @@ export async function POST(request: Request) {
           nom: donnees.nom.trim(),
           role: donnees.role,
           email: creation.user.email ?? "",
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          accesChiffreAffaires: donnees.accesChiffreAffaires
         }
       });
     }
 
     if (donnees.action === "modifier") {
-      if (!uuidValide(donnees.userId) || !texteValide(donnees.nom, 2) || !texteValide(donnees.email, 3) || !estRole(donnees.role)) {
+      if (!uuidValide(donnees.userId) || !texteValide(donnees.nom, 2) || !texteValide(donnees.email, 3) || !estRole(donnees.role) || typeof donnees.accesChiffreAffaires !== "boolean") {
         return reponseErreur("Les informations du compte sont invalides.");
+      }
+
+      if (donnees.role === "CLIENT" && donnees.accesChiffreAffaires) {
+        return reponseErreur("Le compte d'inscription client ne peut pas accéder au chiffre d'affaires.");
       }
 
       const { data: cible, error: erreurCible } = await supabaseAdmin
@@ -223,7 +235,11 @@ export async function POST(request: Request) {
 
       const { error: erreurModification } = await supabaseAdmin
         .from("profiles")
-        .update({ nom: donnees.nom.trim(), role: donnees.role })
+        .update({
+          nom: donnees.nom.trim(),
+          role: donnees.role,
+          acces_chiffre_affaires: donnees.accesChiffreAffaires
+        })
         .eq("user_id", donnees.userId);
 
       if (erreurModification) {
@@ -254,7 +270,8 @@ export async function POST(request: Request) {
           nom: donnees.nom.trim(),
           role: donnees.role,
           email,
-          createdAt: cible.created_at
+          createdAt: cible.created_at,
+          accesChiffreAffaires: donnees.accesChiffreAffaires
         }
       });
     }

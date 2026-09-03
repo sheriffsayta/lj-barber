@@ -13,13 +13,14 @@ import { ROLE_DETAILS, ROLES, type Role } from "@/lib/roles";
 import Sidebar from "@/ui/Sidebar";
 import RoleGuard from "@/ui/auth/RoleGuard";
 
-type Edition = Pick<UtilisateurAdministration, "nom" | "email" | "role">;
+type Edition = Pick<UtilisateurAdministration, "nom" | "email" | "role" | "accesChiffreAffaires">;
 
 const formulaireInitial = {
   nom: "",
   email: "",
   motDePasse: "",
-  role: "COIFFEUR" as Role
+  role: "COIFFEUR" as Role,
+  accesChiffreAffaires: true
 };
 
 function classRole(role: Role) {
@@ -47,7 +48,8 @@ function AdministrationContent() {
     setEditions(Object.fromEntries(profils.map((profil) => [profil.userId, {
       nom: profil.nom,
       email: profil.email,
-      role: profil.role
+      role: profil.role,
+      accesChiffreAffaires: profil.accesChiffreAffaires
     }])));
   }
 
@@ -181,11 +183,28 @@ function AdministrationContent() {
                 <input required minLength={8} type="password" autoComplete="new-password" value={formulaire.motDePasse} onChange={(event) => setFormulaire({ ...formulaire, motDePasse: event.target.value })} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2" />
               </label>
               <label className="text-sm">Rôle et droits
-                <select value={formulaire.role} onChange={(event) => setFormulaire({ ...formulaire, role: event.target.value as Role })} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2">
+                <select value={formulaire.role} onChange={(event) => {
+                  const role = event.target.value as Role;
+                  setFormulaire({
+                    ...formulaire,
+                    role,
+                    accesChiffreAffaires: role === "CLIENT" ? false : formulaire.accesChiffreAffaires
+                  });
+                }} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2">
                   {ROLES.map((role) => <option key={role} value={role}>{ROLE_DETAILS[role].libelle}</option>)}
                 </select>
               </label>
               <p className="text-sm text-gray-400 md:col-span-2">{ROLE_DETAILS[formulaire.role].description}</p>
+              <label className="flex min-h-11 items-center gap-3 text-sm md:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={formulaire.accesChiffreAffaires}
+                  disabled={formulaire.role === "CLIENT"}
+                  onChange={(event) => setFormulaire({ ...formulaire, accesChiffreAffaires: event.target.checked })}
+                  className="h-5 w-5 disabled:opacity-50"
+                />
+                Accès aux prestations, aux prix et au chiffre d’affaires
+              </label>
               <button disabled={actionEnCours === "creation"} className="min-h-11 rounded-xl bg-white px-5 py-3 text-sm font-medium text-black disabled:opacity-50 md:w-fit">
                 {actionEnCours === "creation" ? "Création..." : "Créer le compte"}
               </button>
@@ -200,7 +219,12 @@ function AdministrationContent() {
 
             <div className="divide-y divide-gray-800">
               {utilisateurs.map((utilisateur) => {
-                const edition = editions[utilisateur.userId];
+                const edition = editions[utilisateur.userId] ?? {
+                  nom: utilisateur.nom,
+                  email: utilisateur.email,
+                  role: utilisateur.role,
+                  accesChiffreAffaires: utilisateur.accesChiffreAffaires
+                };
                 const estCompteActuel = utilisateur.userId === utilisateurActuelId;
 
                 return (
@@ -211,6 +235,9 @@ function AdministrationContent() {
                       <p className="mt-1 text-sm text-gray-500">{estCompteActuel ? "Votre compte" : "Compte utilisateur"}</p>
                       <span className={`mt-3 inline-flex rounded-full px-3 py-2 text-sm ${classRole(utilisateur.role)}`}>{ROLE_DETAILS[utilisateur.role].libelle}</span>
                       <p className="mt-2 text-sm leading-5 text-gray-400">{ROLE_DETAILS[utilisateur.role].description}</p>
+                      <span className={`mt-3 inline-flex rounded-full px-3 py-2 text-xs ${utilisateur.accesChiffreAffaires ? "bg-green-950 text-green-300" : "bg-gray-800 text-gray-400"}`}>
+                        {utilisateur.accesChiffreAffaires ? "Chiffre d’affaires autorisé" : "Chiffre d’affaires non autorisé"}
+                      </span>
                     </div>
 
                     <button type="button" onClick={() => setEditionOuverte((ouverte) => ouverte === utilisateur.userId ? null : utilisateur.userId)} className="min-h-11 rounded-xl border border-gray-700 px-4 py-3 text-sm hover:bg-gray-800">
@@ -219,15 +246,38 @@ function AdministrationContent() {
 
                     {editionOuverte === utilisateur.userId && <div className="grid gap-3 border-t border-gray-800 pt-4 lg:col-span-2 sm:grid-cols-2">
                       <label className="text-sm">Nom affiché
-                        <input value={edition?.nom ?? ""} onChange={(event) => setEditions((valeurs) => ({ ...valeurs, [utilisateur.userId]: { nom: event.target.value, email: edition?.email ?? utilisateur.email, role: edition?.role ?? utilisateur.role } }))} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2" />
+                        <input value={edition?.nom ?? ""} onChange={(event) => setEditions((valeurs) => ({ ...valeurs, [utilisateur.userId]: { ...edition, nom: event.target.value } }))} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2" />
                       </label>
                       <label className="text-sm">E-mail de connexion
-                        <input type="email" autoComplete="email" value={edition?.email ?? ""} onChange={(event) => setEditions((valeurs) => ({ ...valeurs, [utilisateur.userId]: { nom: edition?.nom ?? utilisateur.nom, email: event.target.value, role: edition?.role ?? utilisateur.role } }))} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2" />
+                        <input type="email" autoComplete="email" value={edition?.email ?? ""} onChange={(event) => setEditions((valeurs) => ({ ...valeurs, [utilisateur.userId]: { ...edition, email: event.target.value } }))} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2" />
                       </label>
                       <label className="text-sm">Rôle et droits
-                        <select disabled={estCompteActuel} value={edition?.role ?? utilisateur.role} onChange={(event) => setEditions((valeurs) => ({ ...valeurs, [utilisateur.userId]: { nom: edition?.nom ?? utilisateur.nom, email: edition?.email ?? utilisateur.email, role: event.target.value as Role } }))} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2 disabled:opacity-50">
+                        <select disabled={estCompteActuel} value={edition?.role ?? utilisateur.role} onChange={(event) => {
+                          const role = event.target.value as Role;
+                          setEditions((valeurs) => ({
+                            ...valeurs,
+                            [utilisateur.userId]: {
+                              ...edition,
+                              role,
+                              accesChiffreAffaires: role === "CLIENT" ? false : edition.accesChiffreAffaires
+                            }
+                          }));
+                        }} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2 disabled:opacity-50">
                           {ROLES.map((role) => <option key={role} value={role}>{ROLE_DETAILS[role].libelle}</option>)}
                         </select>
+                      </label>
+                      <label className="flex min-h-11 items-center gap-3 text-sm sm:col-span-2">
+                        <input
+                          type="checkbox"
+                          checked={edition?.accesChiffreAffaires ?? false}
+                          disabled={edition.role === "CLIENT"}
+                          onChange={(event) => setEditions((valeurs) => ({
+                            ...valeurs,
+                            [utilisateur.userId]: { ...edition, accesChiffreAffaires: event.target.checked }
+                          }))}
+                          className="h-5 w-5 disabled:opacity-50"
+                        />
+                        Autoriser l’accès aux prestations, aux prix et au chiffre d’affaires
                       </label>
                       {estCompteActuel && <p className="text-xs text-gray-500">Pour votre sécurité, vous ne pouvez pas retirer votre propre rôle administrateur.</p>}
                       <button type="button" disabled={actionEnCours === `profil-${utilisateur.userId}`} onClick={() => void enregistrerUtilisateur(utilisateur)} className="min-h-11 rounded-xl border border-gray-700 px-4 py-3 text-sm hover:bg-gray-800 disabled:opacity-50 sm:self-end">

@@ -31,6 +31,10 @@ function FicheClientContent() {
 
   const [ajoutPrestation, setAjoutPrestation] = useState(false);
   const [datePrestation, setDatePrestation] = useState("");
+  const [prixPrestation, setPrixPrestation] = useState("");
+  const [prestationEnEdition, setPrestationEnEdition] = useState<string | null>(null);
+  const [dateEdition, setDateEdition] = useState("");
+  const [prixEdition, setPrixEdition] = useState("");
   const [prestationEnCours, setPrestationEnCours] =
     useState<string | null>(null);
 
@@ -57,29 +61,35 @@ function FicheClientContent() {
   }
 
   function dateAujourdhui() {
-    return new Date().toISOString().split("T")[0];
+    const maintenant = new Date();
+    return `${maintenant.getFullYear()}-${String(maintenant.getMonth() + 1).padStart(2, "0")}-${String(maintenant.getDate()).padStart(2, "0")}`;
   }
 
   function ouvrirAjoutPrestation() {
     setDatePrestation(dateAujourdhui());
+    setPrixPrestation("");
     setAjoutPrestation(true);
     setErreur("");
   }
 
   async function validerPrestation() {
-    if (!client || !datePrestation) {
+    const prix = Number(prixPrestation.replace(",", "."));
+
+    if (!client || !datePrestation || prixPrestation.trim() === "" || !Number.isFinite(prix) || prix < 0) {
+      setErreur("Renseignez une date et un prix valide.");
       return;
     }
 
     try {
       setErreur("");
 
-      await ajouterPrestation(client.id, datePrestation);
+      await ajouterPrestation(client.id, datePrestation, prix);
 
       const data = await recupererPrestations(client.id);
 
       setPrestations(data);
       setAjoutPrestation(false);
+      setPrixPrestation("");
     } catch (error) {
       console.error(error);
 
@@ -87,13 +97,18 @@ function FicheClientContent() {
     }
   }
 
-  async function modifierDatePrestation(prestation: Prestation) {
-    const nouvelleDate = window.prompt(
-      "Nouvelle date de la prestation :",
-      prestation.date_prestation
-    );
+  function ouvrirModificationPrestation(prestation: Prestation) {
+    setPrestationEnEdition(prestation.id);
+    setDateEdition(prestation.date_prestation);
+    setPrixEdition(prestation.prix?.toString() ?? "");
+    setErreur("");
+  }
 
-    if (!nouvelleDate) {
+  async function validerModificationPrestation(prestation: Prestation) {
+    const prix = Number(prixEdition.replace(",", "."));
+
+    if (!dateEdition || prixEdition.trim() === "" || !Number.isFinite(prix) || prix < 0) {
+      setErreur("Renseignez une date et un prix valide.");
       return;
     }
 
@@ -103,7 +118,8 @@ function FicheClientContent() {
 
       await modifierPrestation(
         prestation.id,
-        nouvelleDate
+        dateEdition,
+        prix
       );
 
       const data = await recupererPrestations(
@@ -111,6 +127,7 @@ function FicheClientContent() {
       );
 
       setPrestations(data);
+      setPrestationEnEdition(null);
     } catch (error) {
       console.error(error);
 
@@ -460,6 +477,21 @@ function FicheClientContent() {
                       className="mt-2 w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white"
                     />
 
+                    <label className="mt-4 block text-sm text-gray-400">
+                      Prix de la prestation (€)
+                    </label>
+
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={prixPrestation}
+                      onChange={(event) => setPrixPrestation(event.target.value)}
+                      placeholder="0,00"
+                      className="mt-2 w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white"
+                    />
+
                     <div className="mt-4 flex flex-col gap-3 sm:flex-row">
 
                       <button
@@ -495,20 +527,73 @@ function FicheClientContent() {
                       {prestations.map((prestation) => (
                         <div
                           key={prestation.id}
-                          className="flex flex-col gap-3 rounded-lg border border-gray-800 bg-gray-950 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                          className="rounded-lg border border-gray-800 bg-gray-950 px-4 py-3"
                         >
 
-                          <p>
-                            {new Date(
-                              prestation.date_prestation
-                            ).toLocaleDateString("fr-FR")}
-                          </p>
+                          {prestationEnEdition === prestation.id ? (
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <label className="text-sm text-gray-400">
+                                Date
+                                <input
+                                  type="date"
+                                  value={dateEdition}
+                                  onChange={(event) => setDateEdition(event.target.value)}
+                                  className="mt-2 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-white"
+                                />
+                              </label>
 
-                          <div className="flex flex-col gap-2 sm:flex-row">
+                              <label className="text-sm text-gray-400">
+                                Prix (€)
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  inputMode="decimal"
+                                  value={prixEdition}
+                                  onChange={(event) => setPrixEdition(event.target.value)}
+                                  className="mt-2 w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-white"
+                                />
+                              </label>
+
+                              <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row sm:justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => setPrestationEnEdition(null)}
+                                  className="rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 hover:bg-gray-800"
+                                >
+                                  Annuler
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => void validerModificationPrestation(prestation)}
+                                  disabled={prestationEnCours === prestation.id}
+                                  className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-black disabled:opacity-50"
+                                >
+                                  Enregistrer
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p>
+                                {new Date(
+                                  prestation.date_prestation
+                                ).toLocaleDateString("fr-FR")}
+                              </p>
+                              <p className="mt-1 font-semibold text-green-400">
+                                {prestation.prix === null
+                                  ? "Prix non renseigné"
+                                  : Number(prestation.prix).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
+                              </p>
+                            </div>
+
+                            <div className="flex flex-col gap-2 sm:flex-row">
 
                             <button
                               onClick={() => {
-                                modifierDatePrestation(
+                                ouvrirModificationPrestation(
                                   prestation
                                 );
                               }}
@@ -537,6 +622,8 @@ function FicheClientContent() {
                             </button>
 
                           </div>
+                          </div>
+                          )}
 
                         </div>
                       ))}

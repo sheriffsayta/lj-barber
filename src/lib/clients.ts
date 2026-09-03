@@ -88,7 +88,8 @@ export type Prestation =
 {
   id: string;
   client_id: string;
-  date_prestation: string; 
+  date_prestation: string;
+  prix: number | null;
 };
 //
 // ============================================================
@@ -587,7 +588,8 @@ export async function supprimerClientsDePlusDe30Jours()
 // Ajouter une prestation
 export async function ajouterPrestation(
   clientId: string,
-  datePrestation: string
+  datePrestation: string,
+  prix: number
 )
 {
   const
@@ -598,7 +600,8 @@ export async function ajouterPrestation(
     .insert(
       {
         client_id: clientId,
-        date_prestation: datePrestation
+        date_prestation: datePrestation,
+        prix
       }
     );
 
@@ -652,7 +655,8 @@ export async function recupererPrestations(
 // Modifier une prestation
 export async function modifierPrestation(
   id: string,
-  datePrestation: string
+  datePrestation: string,
+  prix: number
 )
 {
   const
@@ -662,7 +666,8 @@ export async function modifierPrestation(
     .from("prestations")
     .update(
       {
-        date_prestation: datePrestation
+        date_prestation: datePrestation,
+        prix
       }
     )
     .eq("id", id);
@@ -705,4 +710,29 @@ export async function supprimerPrestation(
       "Impossible de supprimer la prestation."
     );
   }
+}
+
+export async function recupererPrestationsMois(
+  annee: number,
+  mois: number
+): Promise<Prestation[]>
+{
+  const debut = `${annee}-${String(mois + 1).padStart(2, "0")}-01`;
+  const moisSuivant = new Date(annee, mois + 1, 1);
+  const fin = `${moisSuivant.getFullYear()}-${String(moisSuivant.getMonth() + 1).padStart(2, "0")}-01`;
+
+  const { data, error } = await supabase
+    .from("prestations")
+    .select("id, client_id, date_prestation, prix")
+    .gte("date_prestation", debut)
+    .lt("date_prestation", fin)
+    .order("date_prestation", { ascending: true });
+
+  if (error)
+  {
+    console.error("Erreur statistiques mensuelles :", error);
+    throw new Error("Impossible de récupérer le chiffre d'affaires du mois.");
+  }
+
+  return data ?? [];
 }

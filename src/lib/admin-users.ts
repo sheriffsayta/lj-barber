@@ -7,6 +7,7 @@ export type UtilisateurAdministration = {
   role: Role;
   email: string;
   createdAt: string;
+  accesChiffreAffaires: boolean;
 };
 
 type ReponseApi<T> = T & { erreur?: string };
@@ -53,6 +54,7 @@ export async function creerUtilisateurAdministration(donnees: {
   email: string;
   motDePasse: string;
   role: Role;
+  accesChiffreAffaires: boolean;
 }) {
   return appelerAdministration<{ utilisateur: UtilisateurAdministration }>("POST", {
     action: "creer",
@@ -65,6 +67,7 @@ export async function modifierUtilisateurAdministration(donnees: {
   nom: string;
   email: string;
   role: Role;
+  accesChiffreAffaires: boolean;
 }) {
   return appelerAdministration<{ utilisateur: UtilisateurAdministration }>("POST", {
     action: "modifier",

@@ -6,11 +6,13 @@ import { supabase } from "@/lib/supabase";
 import type { Role } from "@/lib/roles";
 import Sidebar from "@/ui/Sidebar";
 import RoleGuard from "@/ui/auth/RoleGuard";
+import RevenueCalendar from "@/ui/dashboard/RevenueCalendar";
 
 type Profile =
 {
   nom: string;
   role: Role;
+  acces_chiffre_affaires: boolean;
 };
 
 function DashboardContent()
@@ -52,7 +54,7 @@ function DashboardContent()
         error: profileError
       } = await supabase
         .from("profiles")
-        .select("nom, role")
+        .select("nom, role, acces_chiffre_affaires")
         .eq("user_id", user.id)
         .single();
 
@@ -228,6 +230,8 @@ function DashboardContent()
           </div>
 
         </div>
+
+        {profile.acces_chiffre_affaires && <RevenueCalendar />}
 
 
         <div className="mt-6 rounded-2xl border border-gray-800 bg-gray-900 p-5 sm:mt-8 sm:p-6 md:p-8">
