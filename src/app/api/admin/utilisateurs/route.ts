@@ -103,8 +103,12 @@ async function utilisateursAvecProfils(supabaseAdmin: ReturnType<typeof clientAd
     supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
   ]);
 
-  if (erreurProfils || erreurAuth) {
-    throw new Error("Impossible de récupérer les comptes.");
+  if (erreurProfils) {
+    throw new Error(`Impossible de lire les profils Supabase : ${erreurProfils.message}`);
+  }
+
+  if (erreurAuth) {
+    throw new Error(`La clé serveur Supabase est refusée : ${erreurAuth.message}`);
   }
 
   const emails = new Map(authData.users.map((user) => [user.id, user.email ?? ""]));
@@ -132,7 +136,10 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Administration utilisateurs GET :", error);
-    return reponseErreur("Le service d'administration n'est pas disponible.", 500);
+    return reponseErreur(
+      error instanceof Error ? error.message : "Le service d'administration n'est pas disponible.",
+      500
+    );
   }
 }
 
@@ -271,6 +278,9 @@ export async function POST(request: Request) {
     return reponseErreur("Action inconnue.");
   } catch (error) {
     console.error("Administration utilisateurs POST :", error);
-    return reponseErreur("Une erreur est survenue lors de la gestion du compte.", 500);
+    return reponseErreur(
+      error instanceof Error ? error.message : "Une erreur est survenue lors de la gestion du compte.",
+      500
+    );
   }
 }
