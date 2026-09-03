@@ -37,7 +37,8 @@ function clientAdministrateur() {
   }
 
   return createClient(url, cleSecrete, {
-    auth: { autoRefreshToken: false, persistSession: false }
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { "User-Agent": "LJBarberAdminServer/1.0" } }
   });
 }
 
