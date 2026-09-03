@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { recupererPrestationsMois, type Prestation } from "@/lib/clients";
+import { formaterNumeroClient } from "@/lib/client-display";
 
 function formaterEuro(montant: number)
 {
@@ -23,6 +25,7 @@ export default function RevenueCalendar()
     () => new Date(maintenant.getFullYear(), maintenant.getMonth(), 1)
   );
   const [prestations, setPrestations] = useState<Prestation[]>([]);
+  const [dateSelectionnee, setDateSelectionnee] = useState<string | null>(null);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState("");
 
@@ -34,6 +37,7 @@ export default function RevenueCalendar()
     {
       setChargement(true);
       setErreur("");
+      setDateSelectionnee(null);
 
       try
       {
@@ -106,6 +110,36 @@ export default function RevenueCalendar()
     (total, prestation) => total + Number(prestation.prix ?? 0),
     0
   );
+
+  const clientsDuJour = useMemo(() =>
+  {
+    if (!dateSelectionnee)
+    {
+      return [];
+    }
+
+    const regroupes = new Map<string, {
+      client: NonNullable<Prestation["client"]>;
+      nombre: number;
+      montant: number;
+    }>();
+
+    for (const prestation of prestations.filter(
+      (item) => item.date_prestation === dateSelectionnee && item.client
+    ))
+    {
+      const client = prestation.client as NonNullable<Prestation["client"]>;
+      const actuel = regroupes.get(client.id) ?? { client, nombre: 0, montant: 0 };
+      actuel.nombre += 1;
+      actuel.montant += Number(prestation.prix ?? 0);
+      regroupes.set(client.id, actuel);
+    }
+
+    return Array.from(regroupes.values()).sort((a, b) =>
+      a.client.nom.localeCompare(b.client.nom, "fr") ||
+      a.client.prenom.localeCompare(b.client.prenom, "fr")
+    );
+  }, [dateSelectionnee, prestations]);
 
   function changerMois(decalage: number)
   {
@@ -180,12 +214,22 @@ export default function RevenueCalendar()
               date.getFullYear() === maintenant.getFullYear() &&
               date.getMonth() === maintenant.getMonth() &&
               jour === maintenant.getDate();
+            const cleDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(jour).padStart(2, "0")}`;
+            const selectionne = dateSelectionnee === cleDate;
 
             return (
-              <article
+              <button
+                type="button"
                 key={jour}
+                onClick={() => setDateSelectionnee(selectionne ? null : cleDate)}
+                aria-pressed={selectionne}
+                aria-label={`Afficher les prestations du ${date.toLocaleDateString("fr-FR")}`}
                 className={`w-28 shrink-0 snap-start rounded-xl border p-3 text-center ${
-                  aujourdhui ? "border-white bg-gray-800" : "border-gray-800 bg-gray-950"
+                  selectionne
+                    ? "border-green-500 bg-green-950/50 ring-2 ring-green-500/30"
+                    : aujourdhui
+                      ? "border-white bg-gray-800"
+                      : "border-gray-800 bg-gray-950 hover:border-gray-600"
                 }`}
               >
                 <p className="text-xs uppercase text-gray-500">
@@ -198,11 +242,66 @@ export default function RevenueCalendar()
                 <p className="mt-2 text-sm font-semibold text-green-400">
                   {chargement ? "—" : formaterEuro(montant)}
                 </p>
-              </article>
+              </button>
             );
           })}
         </div>
       </div>
+
+      {dateSelectionnee && (
+        <div className="mt-4 rounded-2xl border border-gray-800 bg-gray-950 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm text-gray-400">Prestations du</p>
+              <h3 className="mt-1 text-lg font-semibold">
+                {new Date(`${dateSelectionnee}T12:00:00`).toLocaleDateString("fr-FR", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric"
+                })}
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDateSelectionnee(null)}
+              className="min-h-11 rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 hover:bg-gray-800"
+            >
+              Fermer
+            </button>
+          </div>
+
+          {clientsDuJour.length === 0 ? (
+            <p className="mt-5 rounded-xl border border-dashed border-gray-800 p-5 text-center text-sm text-gray-500">
+              Aucune prestation enregistrée ce jour-là.
+            </p>
+          ) : (
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {clientsDuJour.map(({ client, nombre, montant }) => (
+                <Link
+                  key={client.id}
+                  href={`/clients/${client.id}`}
+                  className="rounded-xl border border-gray-800 bg-gray-900 p-4 hover:border-gray-600 hover:bg-gray-800"
+                >
+                  <p className="font-semibold">{client.prenom} {client.nom}</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Client {formaterNumeroClient(client.numero_client)}
+                  </p>
+                  {client.metier && (
+                    <p className="mt-2 text-sm text-gray-400">{client.metier}</p>
+                  )}
+                  <div className="mt-4 flex items-end justify-between gap-3">
+                    <p className="text-xs text-gray-400">
+                      {nombre} prestation{nombre !== 1 ? "s" : ""}
+                    </p>
+                    <p className="font-bold text-green-400">{formaterEuro(montant)}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-4 rounded-2xl border border-green-900 bg-green-950/40 p-5 sm:flex sm:items-center sm:justify-between sm:p-6">
         <div>

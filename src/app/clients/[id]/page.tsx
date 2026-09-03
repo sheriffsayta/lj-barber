@@ -350,6 +350,16 @@ function FicheClientContent() {
 
                   <div>
                     <p className="text-sm text-gray-500">
+                      Métier
+                    </p>
+
+                    <p className="mt-1 break-words">
+                      {client.metier || "Non renseigné"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-500">
                       Consentements de communication
                     </p>
 

@@ -95,6 +95,10 @@ export default function ClientForm(
     client?.pseudo ?? ""
   );
 
+  const [metier, setMetier] = useState(
+    client?.metier ?? ""
+  );
+
   const [telephone, setTelephone] = useState(
     client?.telephone ?? ""
   );
@@ -150,6 +154,7 @@ export default function ClientForm(
         prenom: "First name",
         nom: "Last name",
         pseudo: "Nickname",
+        metier: "Occupation",
         telephone: "Phone number",
         email: "Email",
         dateNaissance: "Date of birth",
@@ -178,6 +183,7 @@ export default function ClientForm(
         prenom: "Prénom",
         nom: "Nom",
         pseudo: "Pseudo",
+        metier: "Métier",
         telephone: "Téléphone",
         email: "E-mail",
         dateNaissance: "Date de naissance",
@@ -217,6 +223,7 @@ export default function ClientForm(
     categorie,
     notes,
     pseudo,
+    metier,
     reseauxSociaux,
     localisations,
     smsConsentement,
@@ -356,6 +363,22 @@ export default function ClientForm(
             onChange={(event) =>
             {
               setPseudo(event.target.value);
+            }}
+            className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none focus:ring-2"
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium">
+            {textes.metier}
+          </label>
+
+          <input
+            type="text"
+            value={metier}
+            onChange={(event) =>
+            {
+              setMetier(event.target.value);
             }}
             className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none focus:ring-2"
           />

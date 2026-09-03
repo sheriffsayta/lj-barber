@@ -241,6 +241,7 @@ function ClientsContent()
       client.nom,
       client.prenom,
       client.pseudo,
+      client.metier,
       client.telephone,
       client.email,
       client.categorie,
@@ -751,6 +752,12 @@ function ClientsContent()
                               </p>
                             )}
 
+                            {client.metier && (
+                              <p className="mt-1 break-words text-sm text-gray-400">
+                                {client.metier}
+                              </p>
+                            )}
+
                             {client.sms_consentement ? (
                               <span className="mt-3 inline-flex rounded-full bg-green-950 px-2.5 py-1 text-xs text-green-400">
                                 ✓ SMS autorisé
@@ -895,6 +902,12 @@ function ClientsContent()
                               {client.email && (
                                 <p className="mt-1 text-sm text-gray-500">
                                   {client.email}
+                                </p>
+                              )}
+
+                              {client.metier && (
+                                <p className="mt-1 text-sm text-gray-400">
+                                  {client.metier}
                                 </p>
                               )}
 

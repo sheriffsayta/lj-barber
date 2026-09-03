@@ -13,6 +13,7 @@ export type Client =
   categorie: string;
   notes: string | null;
   pseudo: string | null;
+  metier: string | null;
   reseaux_sociaux: string | null;
   sms_consentement: boolean;
   sms_consentement_date: string | null;
@@ -50,6 +51,7 @@ export type ClientInput = {
   categorie: string;
   notes: string;
   pseudo: string;
+  metier: string;
   reseauxSociaux: string;
   localisations: LocalisationInput[];
   smsConsentement: boolean;
@@ -64,6 +66,7 @@ export async function inscrireClient(
     p_prenom: donnees.prenom,
     p_nom: donnees.nom,
     p_pseudo: donnees.pseudo,
+    p_metier: donnees.metier,
     p_telephone: donnees.telephone,
     p_email: donnees.email,
     p_date_naissance: donnees.dateNaissance || null,
@@ -90,6 +93,13 @@ export type Prestation =
   client_id: string;
   date_prestation: string;
   prix: number | null;
+  client?: {
+    id: string;
+    numero_client: number;
+    prenom: string;
+    nom: string;
+    metier: string | null;
+  } | null;
 };
 //
 // ============================================================
@@ -282,6 +292,7 @@ export async function ajouterClient(
     categorie,
     notes,
     pseudo,
+    metier,
     reseauxSociaux,
     localisations,
     smsConsentement,
@@ -307,6 +318,7 @@ export async function ajouterClient(
         categorie,
         notes: notes || null,
         pseudo: pseudo || null,
+        metier: metier || null,
         reseaux_sociaux: reseauxSociaux || null,
         sms_consentement:
           smsConsentement,
@@ -353,6 +365,7 @@ export async function modifierClient(
     categorie,
     notes,
     pseudo,
+    metier,
     reseauxSociaux,
     localisations,
     smsConsentement,
@@ -375,6 +388,7 @@ export async function modifierClient(
     categorie,
     notes: notes || null,
     pseudo: pseudo || null,
+    metier: metier || null,
     reseaux_sociaux: reseauxSociaux || null,
     sms_consentement: smsConsentement,
     ...(consentementSmsModifie && {
@@ -723,7 +737,7 @@ export async function recupererPrestationsMois(
 
   const { data, error } = await supabase
     .from("prestations")
-    .select("id, client_id, date_prestation, prix")
+    .select("id, client_id, date_prestation, prix, client:clients(id, numero_client, prenom, nom, metier)")
     .gte("date_prestation", debut)
     .lt("date_prestation", fin)
     .order("date_prestation", { ascending: true });
@@ -734,5 +748,10 @@ export async function recupererPrestationsMois(
     throw new Error("Impossible de récupérer le chiffre d'affaires du mois.");
   }
 
-  return data ?? [];
+  return (data ?? []).map((prestation) => ({
+    ...prestation,
+    client: Array.isArray(prestation.client)
+      ? prestation.client[0] ?? null
+      : prestation.client
+  })) as Prestation[];
 }
