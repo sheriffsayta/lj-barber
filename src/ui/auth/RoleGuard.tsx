@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-
-type Role = "ADMIN" | "COIFFEUR" | "CLIENT";
+import type { Role } from "@/lib/roles";
 
 export default function RoleGuard({
   roles,

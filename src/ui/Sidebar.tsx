@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import type { Role } from "@/lib/roles";
 import { supabase } from "@/lib/supabase";
-
-type Role = "ADMIN" | "COIFFEUR" | "CLIENT";
 
 const liens = [
   {
@@ -34,6 +33,7 @@ export default function Sidebar(
 )
 {
   const pathname = usePathname();
+  const router = useRouter();
 
   const [role, setRole] =
     useState<Role | null>(null);
@@ -108,7 +108,7 @@ export default function Sidebar(
   {
     await supabase.auth.signOut();
 
-    window.location.href = "/";
+    router.replace("/");
   }
 
 

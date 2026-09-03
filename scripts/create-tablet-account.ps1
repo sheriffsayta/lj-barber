@@ -30,7 +30,7 @@ try {
     -UserAgent "LJBarberAdminScript/1.0"
 
   $userId = $user.id
-  & $psql $dbUrl --set=ON_ERROR_STOP=1 --quiet -c "insert into public.profiles (user_id, nom, role) values ('$userId', 'Tablette inscription', 'CLIENT') on conflict (user_id) do update set nom = excluded.nom, role = excluded.role;"
+  & $psql $dbUrl --set=ON_ERROR_STOP=1 --quiet -c "insert into public.profiles (user_id, nom, role) values ('$userId', 'Inscription client', 'CLIENT') on conflict (user_id) do update set nom = excluded.nom, role = excluded.role;"
   if ($LASTEXITCODE -ne 0) { throw "Le profil CLIENT n'a pas pu être créé." }
 
   Write-Host "Compte tablette créé : $Email"

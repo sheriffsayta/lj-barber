@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import Sidebar from "@/ui/Sidebar";
 import ClientForm from "@/ui/clients/ClientForm";
 import RoleGuard from "@/ui/auth/RoleGuard";
+import { formaterNumeroClient } from "@/lib/client-display";
 
 import {
   recupererClient,
@@ -260,7 +261,7 @@ function FicheClientContent() {
 
           <div className="mb-6 sm:mb-8">
             <p className="text-sm text-gray-500">
-              Client #{client.numero_client}
+              Client {formaterNumeroClient(client.numero_client)}
             </p>
 
             <h1 className="mt-1 break-words text-2xl font-bold sm:text-3xl">

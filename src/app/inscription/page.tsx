@@ -4,6 +4,7 @@ import { useState } from "react";
 import ClientForm from "@/ui/clients/ClientForm";
 import RoleGuard from "@/ui/auth/RoleGuard";
 import Sidebar from "@/ui/Sidebar";
+import { formaterNumeroClient } from "@/lib/client-display";
 
 export default function Inscription()
 {
@@ -19,7 +20,7 @@ export default function Inscription()
             <div className="py-10 text-center">
               <h1 className="text-2xl font-bold">Merci pour votre inscription !</h1>
               <p className="mt-3 text-gray-400">
-                Votre numéro client est le #{numeroClient}.
+                Votre numéro client est le {formaterNumeroClient(numeroClient)}.
               </p>
               <button
                 onClick={() => {

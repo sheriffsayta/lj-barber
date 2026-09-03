@@ -1,11 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { useRouter } from "next/navigation";
 
 import Sidebar from "@/ui/Sidebar";
 import ClientForm from "@/ui/clients/ClientForm";
 import RoleGuard from "@/ui/auth/RoleGuard";
+import { formaterNumeroClient } from "@/lib/client-display";
+
+function FiltreMultiple({ titre, options, selection, onBasculer }: {
+  titre: string;
+  options: string[];
+  selection: string[];
+  onBasculer: (option: string) => void;
+}) {
+  return (
+    <details className="relative">
+      <summary className="cursor-pointer list-none rounded-lg border border-gray-700 px-4 py-3 text-sm text-gray-300">
+        {titre}{selection.length > 0 && <span className="ml-2">({selection.length})</span>}
+      </summary>
+      <div className="absolute left-0 z-30 mt-2 w-full min-w-64 max-w-xs rounded-xl border border-gray-700 bg-gray-900 p-3 shadow-xl">
+        {options.length === 0 ? <p className="text-sm text-gray-500">Aucune option</p> : options.map((option) => (
+          <label key={option} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-800">
+            <input type="checkbox" checked={selection.includes(option)} onChange={() => onBasculer(option)} className="h-5 w-5" />
+            <span className="text-sm">{option}</span>
+          </label>
+        ))}
+      </div>
+    </details>
+  );
+}
 
 import {
   rechercherClients,
@@ -28,6 +52,8 @@ function ClientsContent()
 
   const [categoriesSelectionnees, setCategoriesSelectionnees] =
     useState<string[]>([]);
+  const [paysSelectionnes, setPaysSelectionnes] = useState<string[]>([]);
+  const [villesSelectionnees, setVillesSelectionnees] = useState<string[]>([]);
 
   const [filtreSms, setFiltreSms] =
     useState<"tous" | "autorise" | "non_autorise">("tous");
@@ -193,17 +219,44 @@ function ClientsContent()
     new Set(clients.map((client) => client.categorie))
   ).sort();
 
-  const texteRecherche = recherche.toLowerCase().trim();
+  const pays = Array.from(new Set(clients.flatMap((client) =>
+    client.localisations?.map(({ pays }) => pays) ?? []
+  ))).sort();
+  const villes = Array.from(new Set(clients.flatMap((client) =>
+    client.localisations?.flatMap(({ ville }) => ville ? [ville] : []) ?? []
+  ))).sort();
+
+  const texteRecherche = recherche
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .trim();
 
   const clientsFiltres = clients.filter((client) =>
   {
-    const correspondRecherche =
-      client.nom.toLowerCase().includes(texteRecherche) ||
-      client.prenom.toLowerCase().includes(texteRecherche) ||
-      (client.pseudo ?? "").toLowerCase().includes(texteRecherche) ||
-      (client.reseaux_sociaux ?? "").toLowerCase().includes(texteRecherche) ||
-      client.telephone.includes(texteRecherche) ||
-      client.numero_client.toString().includes(texteRecherche);
+    const ficheRecherche = [
+      "client",
+      client.nom,
+      client.prenom,
+      client.pseudo,
+      client.telephone,
+      client.email,
+      client.categorie,
+      client.notes,
+      client.reseaux_sociaux,
+      client.sexe,
+      client.numero_client.toString(),
+      formaterNumeroClient(client.numero_client),
+      ...(client.localisations ?? []).flatMap(({ pays, ville }) => [pays, ville]),
+      client.sms_consentement ? "sms autorise" : "sms non autorise"
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase();
+
+    const correspondRecherche = ficheRecherche.includes(texteRecherche);
 
     const correspondCategorie =
       categoriesSelectionnees.length === 0 ||
@@ -214,10 +267,17 @@ function ClientsContent()
       (filtreSms === "autorise" && client.sms_consentement) ||
       (filtreSms === "non_autorise" && !client.sms_consentement);
 
+    const correspondPays = paysSelectionnes.length === 0 ||
+      client.localisations?.some(({ pays }) => paysSelectionnes.includes(pays));
+    const correspondVille = villesSelectionnees.length === 0 ||
+      client.localisations?.some(({ ville }) => ville && villesSelectionnees.includes(ville));
+
     return (
       correspondRecherche &&
       correspondCategorie &&
-      correspondSms
+      correspondSms &&
+      correspondPays &&
+      correspondVille
     );
   });
 
@@ -255,6 +315,14 @@ function ClientsContent()
       selection.includes(categorie)
         ? selection.filter((item) => item !== categorie)
         : [...selection, categorie]
+    );
+  }
+
+  function basculerSelection(option: string, setSelection: Dispatch<SetStateAction<string[]>>)
+  {
+    setSelection((selection) => selection.includes(option)
+      ? selection.filter((item) => item !== option)
+      : [...selection, option]
     );
   }
 
@@ -477,6 +545,24 @@ function ClientsContent()
 
                   </details>
 
+                  <FiltreMultiple
+                    titre="Pays"
+                    options={pays}
+                    selection={paysSelectionnes}
+                    onBasculer={(pays) =>
+                      basculerSelection(pays, setPaysSelectionnes)
+                    }
+                  />
+
+                  <FiltreMultiple
+                    titre="Villes"
+                    options={villes}
+                    selection={villesSelectionnees}
+                    onBasculer={(ville) =>
+                      basculerSelection(ville, setVillesSelectionnees)
+                    }
+                  />
+
                   <select
                     value={filtreSms}
                     onChange={(event) =>
@@ -503,6 +589,8 @@ function ClientsContent()
                   </select>
 
                   {(categoriesSelectionnees.length > 0 ||
+                    paysSelectionnes.length > 0 ||
+                    villesSelectionnees.length > 0 ||
                     filtreSms !== "tous" ||
                     recherche) && (
                     <button
@@ -510,6 +598,8 @@ function ClientsContent()
                       {
                         setRecherche("");
                         setCategoriesSelectionnees([]);
+                        setPaysSelectionnes([]);
+                        setVillesSelectionnees([]);
                         setFiltreSms("tous");
                       }}
                       className="min-h-11 rounded-lg border border-gray-700 px-4 py-3 text-sm text-gray-400 hover:bg-gray-800 hover:text-white"
@@ -612,7 +702,7 @@ function ClientsContent()
                                 </p>
 
                                 <p className="mt-1 text-xs text-gray-500">
-                                  Client #{client.numero_client}
+                                  Client {formaterNumeroClient(client.numero_client)}
                                 </p>
 
                               </div>
@@ -749,7 +839,7 @@ function ClientsContent()
                             </td>
 
                             <td className="px-5 py-4 font-mono text-gray-400">
-                              #{client.numero_client}
+                              {formaterNumeroClient(client.numero_client)}
                             </td>
 
                             <td className="px-5 py-4">
@@ -884,7 +974,7 @@ function ClientsContent()
                           </p>
 
                           <p className="mt-1 text-sm text-gray-500">
-                            Client #{client.numero_client}
+                            Client {formaterNumeroClient(client.numero_client)}
                           </p>
 
                           {client.date_suppression && (

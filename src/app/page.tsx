@@ -1,9 +1,11 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function Home() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -11,7 +13,7 @@ export default function Home() {
   const [connexion, setConnexion] = useState(false);
   const [message, setMessage] = useState("");
 
-  async function redirigerSelonRole() {
+  const redirigerSelonRole = useCallback(async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -26,10 +28,10 @@ export default function Home() {
       .eq("user_id", user.id)
       .single();
 
-    window.location.href = data?.role === "CLIENT"
+    router.replace(data?.role === "CLIENT"
       ? "/inscription"
-      : "/dashboard";
-  }
+      : "/dashboard");
+  }, [router]);
 
   useEffect(() => {
     async function verifierConnexion() {
@@ -46,7 +48,7 @@ export default function Home() {
     }
 
     verifierConnexion();
-  }, []);
+  }, [redirigerSelonRole]);
 
   async function seConnecter(
     event: FormEvent<HTMLFormElement>

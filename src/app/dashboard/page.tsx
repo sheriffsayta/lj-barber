@@ -1,18 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import type { Role } from "@/lib/roles";
 import Sidebar from "@/ui/Sidebar";
 import RoleGuard from "@/ui/auth/RoleGuard";
 
 type Profile =
 {
   nom: string;
-  role: "ADMIN" | "COIFFEUR";
+  role: Role;
 };
 
 function DashboardContent()
 {
+  const router = useRouter();
   const [profile, setProfile] =
     useState<Profile | null>(null);
 
@@ -39,7 +42,7 @@ function DashboardContent()
 
       if (!user)
       {
-        window.location.href = "/";
+        router.replace("/");
         return;
       }
 
@@ -62,7 +65,7 @@ function DashboardContent()
 
         await supabase.auth.signOut();
 
-        window.location.href = "/";
+        router.replace("/");
         return;
       }
 
@@ -128,7 +131,7 @@ function DashboardContent()
     }
 
     chargerDashboard();
-  }, []);
+  }, [router]);
 
   if (loading)
   {

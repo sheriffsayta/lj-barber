@@ -11,8 +11,28 @@ import {
 } from "@/lib/clients";
 
 const paysSuggestions = [
-  "France", "Belgique", "Suisse", "Luxembourg", "Canada",
-  "Maroc", "Algérie", "Tunisie", "Sénégal", "Côte d’Ivoire"
+  "Afghanistan", "Afrique du Sud", "Albanie", "Algérie", "Allemagne",
+  "Andorre", "Angola", "Arabie saoudite", "Argentine", "Arménie",
+  "Australie", "Autriche", "Azerbaïdjan", "Bahamas", "Bahreïn",
+  "Bangladesh", "Belgique", "Bénin", "Bolivie", "Bosnie-Herzégovine",
+  "Brésil", "Bulgarie", "Burkina Faso", "Burundi", "Cameroun", "Canada",
+  "Cap-Vert", "Chili", "Chine", "Chypre", "Colombie", "Comores",
+  "Congo", "Corée du Sud", "Costa Rica", "Côte d’Ivoire", "Croatie",
+  "Cuba", "Danemark", "Djibouti", "Égypte", "Émirats arabes unis",
+  "Équateur", "Espagne", "Estonie", "États-Unis", "Éthiopie", "Finlande",
+  "France", "Gabon", "Gambie", "Géorgie", "Ghana", "Grèce", "Guinée",
+  "Haïti", "Hongrie", "Inde", "Indonésie", "Irlande", "Islande", "Israël",
+  "Italie", "Jamaïque", "Japon", "Jordanie", "Kenya", "Koweït", "Laos",
+  "Lettonie", "Liban", "Libye", "Lituanie", "Luxembourg", "Madagascar",
+  "Malaisie", "Mali", "Malte", "Maroc", "Maurice", "Mauritanie", "Mexique",
+  "Moldavie", "Monaco", "Monténégro", "Mozambique", "Niger", "Nigeria",
+  "Norvège", "Nouvelle-Zélande", "Oman", "Pakistan", "Palestine", "Panama",
+  "Paraguay", "Pays-Bas", "Pérou", "Philippines", "Pologne", "Portugal",
+  "Qatar", "République démocratique du Congo", "République dominicaine",
+  "Roumanie", "Royaume-Uni", "Russie", "Rwanda", "Sénégal", "Serbie",
+  "Singapour", "Slovaquie", "Slovénie", "Somalie", "Soudan", "Sri Lanka",
+  "Suède", "Suisse", "Syrie", "Tanzanie", "Tchad", "Thaïlande", "Togo",
+  "Tunisie", "Turquie", "Ukraine", "Uruguay", "Venezuela", "Vietnam", "Yémen"
 ];
 
 type ClientFormProps =

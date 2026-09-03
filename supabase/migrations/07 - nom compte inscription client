@@ -1,0 +1,7 @@
+-- Renomme le compte partagé d'inscription déjà créé.
+-- Les nouveaux comptes créés par le script utiliseront aussi ce nom.
+
+update public.profiles
+set nom = 'Inscription client'
+where role = 'CLIENT'
+  and nom = 'Tablette inscription';

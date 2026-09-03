@@ -1,417 +1,238 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { FormEvent, useCallback, useEffect, useState } from "react";
+
+import {
+  creerUtilisateurAdministration,
+  modifierMotDePasseUtilisateur,
+  modifierUtilisateurAdministration,
+  recupererUtilisateursAdministration,
+  type UtilisateurAdministration
+} from "@/lib/admin-users";
+import { ROLE_DETAILS, ROLES, type Role } from "@/lib/roles";
 import Sidebar from "@/ui/Sidebar";
 import RoleGuard from "@/ui/auth/RoleGuard";
 
-type Role = "ADMIN" | "COIFFEUR";
+type Edition = Pick<UtilisateurAdministration, "nom" | "role">;
 
-type Profile = {
-  user_id: string;
-  nom: string;
-  role: Role;
+const formulaireInitial = {
+  nom: "",
+  email: "",
+  motDePasse: "",
+  role: "COIFFEUR" as Role
 };
 
+function classRole(role: Role) {
+  return role === "ADMIN"
+    ? "bg-purple-950 text-purple-300"
+    : role === "CLIENT"
+      ? "bg-blue-950 text-blue-300"
+      : "bg-gray-800 text-gray-300";
+}
+
 function AdministrationContent() {
-  const [profilActuel, setProfilActuel] =
-    useState<Profile | null>(null);
-
-  const [utilisateurs, setUtilisateurs] =
-    useState<Profile[]>([]);
-
-  const [loading, setLoading] = useState(true);
+  const [utilisateurs, setUtilisateurs] = useState<UtilisateurAdministration[]>([]);
+  const [utilisateurActuelId, setUtilisateurActuelId] = useState("");
+  const [editions, setEditions] = useState<Record<string, Edition>>({});
+  const [formulaire, setFormulaire] = useState(formulaireInitial);
+  const [motsDePasse, setMotsDePasse] = useState<Record<string, string>>({});
+  const [chargement, setChargement] = useState(true);
+  const [actionEnCours, setActionEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState("");
   const [message, setMessage] = useState("");
-  const [modification, setModification] =
-    useState<string | null>(null);
 
-  async function chargerUtilisateurs() {
-    setErreur("");
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      window.location.href = "/";
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("user_id, nom, role");
-
-    if (error) {
-      console.error(error);
-
-      setErreur(
-        "Impossible de récupérer les utilisateurs."
-      );
-
-      return;
-    }
-
-    const profils = (data ?? []) as Profile[];
-
-    const profil = profils.find(
-      (item) => item.user_id === user.id
-    );
-
-    if (!profil || profil.role !== "ADMIN") {
-      window.location.href = "/dashboard";
-      return;
-    }
-
-    setProfilActuel(profil);
-    setUtilisateurs(profils);
+  function preparerEditions(profils: UtilisateurAdministration[]) {
+    setEditions(Object.fromEntries(profils.map((profil) => [profil.userId, {
+      nom: profil.nom,
+      role: profil.role
+    }])));
   }
 
-  useEffect(() => {
-    async function charger() {
-      setLoading(true);
-
-      await chargerUtilisateurs();
-
-      setLoading(false);
-    }
-
-    charger();
+  const chargerUtilisateurs = useCallback(async () => {
+    const donnees = await recupererUtilisateursAdministration();
+    setUtilisateurs(donnees.utilisateurs);
+    setUtilisateurActuelId(donnees.utilisateurActuelId);
+    preparerEditions(donnees.utilisateurs);
   }, []);
 
-  async function modifierRole(
-    utilisateur: Profile
-  ) {
-    if (!profilActuel) {
-      return;
-    }
+  useEffect(() => {
+    void (async () => {
+      try {
+        await chargerUtilisateurs();
+      } catch (cause) {
+        setErreur(cause instanceof Error ? cause.message : "Impossible de charger les comptes.");
+      } finally {
+        setChargement(false);
+      }
+    })();
+  }, [chargerUtilisateurs]);
 
-    if (
-      utilisateur.user_id ===
-      profilActuel.user_id
-    ) {
-      setErreur(
-        "Vous ne pouvez pas modifier votre propre rôle."
-      );
+  function afficherMessage(nouveauMessage: string) {
+    setErreur("");
+    setMessage(nouveauMessage);
+  }
 
-      return;
-    }
-
-    const nouveauRole: Role =
-      utilisateur.role === "ADMIN"
-        ? "COIFFEUR"
-        : "ADMIN";
-
-    const confirmation = window.confirm(
-      `Changer le rôle de ${utilisateur.nom} en ${nouveauRole} ?`
-    );
-
-    if (!confirmation) {
-      return;
-    }
+  async function creerCompte(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setActionEnCours("creation");
+    setErreur("");
+    setMessage("");
 
     try {
-      setModification(utilisateur.user_id);
-      setErreur("");
-      setMessage("");
-
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          role: nouveauRole,
-        })
-        .eq(
-          "user_id",
-          utilisateur.user_id
-        );
-
-      if (error) {
-        console.error(error);
-
-        setErreur(
-          "Impossible de modifier le rôle. Vérifiez vos permissions."
-        );
-
-        return;
-      }
-
-      setMessage(
-        `Le rôle de ${utilisateur.nom} a été modifié.`
-      );
-
+      await creerUtilisateurAdministration(formulaire);
+      setFormulaire(formulaireInitial);
       await chargerUtilisateurs();
-    } catch (error) {
-      console.error(error);
-
-      setErreur(
-        "Une erreur est survenue."
-      );
+      afficherMessage("Le compte a été créé.");
+    } catch (cause) {
+      setErreur(cause instanceof Error ? cause.message : "Impossible de créer le compte.");
     } finally {
-      setModification(null);
+      setActionEnCours(null);
     }
   }
 
-  if (loading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-950 px-4 text-white">
-        <p className="text-center">
-          Chargement de l&apos;administration...
-        </p>
-      </main>
-    );
+  async function enregistrerUtilisateur(utilisateur: UtilisateurAdministration) {
+    const edition = editions[utilisateur.userId];
+
+    if (!edition) {
+      return;
+    }
+
+    setActionEnCours(`profil-${utilisateur.userId}`);
+    setErreur("");
+    setMessage("");
+
+    try {
+      await modifierUtilisateurAdministration({ userId: utilisateur.userId, ...edition });
+      await chargerUtilisateurs();
+      afficherMessage(`Le compte ${edition.nom} a été mis à jour.`);
+    } catch (cause) {
+      setErreur(cause instanceof Error ? cause.message : "Impossible de modifier ce compte.");
+    } finally {
+      setActionEnCours(null);
+    }
+  }
+
+  async function changerMotDePasse(utilisateur: UtilisateurAdministration) {
+    const motDePasse = motsDePasse[utilisateur.userId] ?? "";
+
+    if (motDePasse.length < 8) {
+      setErreur("Le mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+
+    setActionEnCours(`mot-de-passe-${utilisateur.userId}`);
+    setErreur("");
+    setMessage("");
+
+    try {
+      await modifierMotDePasseUtilisateur({ userId: utilisateur.userId, motDePasse });
+      setMotsDePasse((valeurs) => ({ ...valeurs, [utilisateur.userId]: "" }));
+      afficherMessage(`Le mot de passe de ${utilisateur.nom} a été modifié.`);
+    } catch (cause) {
+      setErreur(cause instanceof Error ? cause.message : "Impossible de modifier le mot de passe.");
+    } finally {
+      setActionEnCours(null);
+    }
+  }
+
+  if (chargement) {
+    return <main className="flex min-h-screen items-center justify-center bg-gray-950 p-6 text-white">Chargement de l&apos;administration...</main>;
   }
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-gray-950 text-white">
-
       <div className="min-h-screen md:flex">
-
         <Sidebar />
 
         <section className="min-w-0 flex-1 px-4 py-6 sm:px-6 sm:py-8 md:p-10">
-
-          {/* ======================================================
-              EN-TÊTE
-          ====================================================== */}
-
-          <header className="mb-7 sm:mb-9 md:mb-10">
-
-            <p className="text-sm text-gray-400">
-              Gestion du système
-            </p>
-
-            <h1 className="mt-1 break-words text-2xl font-bold sm:text-3xl md:text-4xl">
-              🔐 Administration
-            </h1>
-
+          <header className="mb-8">
+            <p className="text-sm text-gray-400">Gestion du système</p>
+            <h1 className="mt-1 text-2xl font-bold sm:text-3xl md:text-4xl">Administration</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-400 sm:text-base">
-              Gestion des utilisateurs et des droits d&apos;accès.
+              Créez et gérez les accès au salon depuis un seul endroit.
             </p>
-
           </header>
 
+          {erreur && <p role="alert" className="mb-6 rounded-xl border border-red-900 bg-red-950 p-4 text-sm text-red-300">{erreur}</p>}
+          {message && <p className="mb-6 rounded-xl border border-green-900 bg-green-950 p-4 text-sm text-green-300">{message}</p>}
 
-          {/* ======================================================
-              MESSAGES
-          ====================================================== */}
+          <section className="rounded-2xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
+            <h2 className="text-lg font-semibold sm:text-xl">Ajouter un compte</h2>
+            <p className="mt-1 text-sm leading-6 text-gray-400">Le mot de passe doit contenir au moins 8 caractères.</p>
 
-          {erreur && (
-            <div className="mb-6 rounded-xl border border-red-900 bg-red-950 p-4 text-sm leading-6 text-red-300">
-              {erreur}
-            </div>
-          )}
+            <form onSubmit={creerCompte} className="mt-5 grid gap-4 md:grid-cols-2">
+              <label className="text-sm">Nom du compte
+                <input required minLength={2} value={formulaire.nom} onChange={(event) => setFormulaire({ ...formulaire, nom: event.target.value })} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2" />
+              </label>
+              <label className="text-sm">E-mail de connexion
+                <input required type="email" autoComplete="email" value={formulaire.email} onChange={(event) => setFormulaire({ ...formulaire, email: event.target.value })} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2" />
+              </label>
+              <label className="text-sm">Mot de passe temporaire
+                <input required minLength={8} type="password" autoComplete="new-password" value={formulaire.motDePasse} onChange={(event) => setFormulaire({ ...formulaire, motDePasse: event.target.value })} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2" />
+              </label>
+              <label className="text-sm">Rôle et droits
+                <select value={formulaire.role} onChange={(event) => setFormulaire({ ...formulaire, role: event.target.value as Role })} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2">
+                  {ROLES.map((role) => <option key={role} value={role}>{ROLE_DETAILS[role].libelle}</option>)}
+                </select>
+              </label>
+              <p className="text-sm text-gray-400 md:col-span-2">{ROLE_DETAILS[formulaire.role].description}</p>
+              <button disabled={actionEnCours === "creation"} className="min-h-11 rounded-xl bg-white px-5 py-3 text-sm font-medium text-black disabled:opacity-50 md:w-fit">
+                {actionEnCours === "creation" ? "Création..." : "Créer le compte"}
+              </button>
+            </form>
+          </section>
 
-          {message && (
-            <div className="mb-6 rounded-xl border border-green-900 bg-green-950 p-4 text-sm leading-6 text-green-300">
-              {message}
-            </div>
-          )}
-
-
-          {/* ======================================================
-              UTILISATEURS
-          ====================================================== */}
-
-          <div className="min-w-0 overflow-hidden rounded-2xl border border-gray-800 bg-gray-900">
-
+          <section className="mt-6 overflow-hidden rounded-2xl border border-gray-800 bg-gray-900">
             <div className="border-b border-gray-800 p-5 sm:p-6">
-
-              <h2 className="text-lg font-semibold sm:text-xl">
-                Utilisateurs
-              </h2>
-
-              <p className="mt-1 text-sm leading-6 text-gray-400">
-                Gérez les rôles des utilisateurs de LJ BARBER.
-              </p>
-
+              <h2 className="text-lg font-semibold sm:text-xl">Comptes et droits</h2>
+              <p className="mt-1 text-sm leading-6 text-gray-400">Un rôle définit les droits d&apos;accès : ADMIN, COIFFEUR ou inscription client.</p>
             </div>
-
 
             <div className="divide-y divide-gray-800">
+              {utilisateurs.map((utilisateur) => {
+                const edition = editions[utilisateur.userId];
+                const estCompteActuel = utilisateur.userId === utilisateurActuelId;
 
-              {utilisateurs.map(
-                (utilisateur) => (
-                  <div
-                    key={utilisateur.user_id}
-                    className="flex flex-col gap-4 p-5 sm:p-6 md:flex-row md:items-center md:justify-between"
-                  >
-
-                    {/* INFORMATIONS UTILISATEUR */}
-
+                return (
+                  <article key={utilisateur.userId} className="grid gap-4 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                     <div className="min-w-0">
-
-                      <p className="break-words font-medium">
-                        {utilisateur.nom}
-
-                        {utilisateur.user_id ===
-                          profilActuel?.user_id && (
-                          <span className="ml-2 text-sm text-gray-500">
-                            (Vous)
-                          </span>
-                        )}
-                      </p>
-
-                      <p className="mt-1 text-sm text-gray-500">
-                        {utilisateur.role === "ADMIN"
-                          ? "Administrateur"
-                          : "Coiffeur"}
-                      </p>
-
+                      <p className="break-words font-medium">{utilisateur.email || "E-mail non disponible"}</p>
+                      <p className="mt-1 text-sm text-gray-500">{estCompteActuel ? "Votre compte" : "Compte utilisateur"}</p>
+                      <span className={`mt-3 inline-flex rounded-full px-3 py-2 text-sm ${classRole(utilisateur.role)}`}>{ROLE_DETAILS[utilisateur.role].libelle}</span>
+                      <p className="mt-2 text-sm leading-5 text-gray-400">{ROLE_DETAILS[edition?.role ?? utilisateur.role].description}</p>
                     </div>
 
-
-                    {/* ROLE + BOUTON */}
-
-                    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center md:w-auto">
-
-                      <span
-                        className={
-                          utilisateur.role === "ADMIN"
-                            ? "w-fit rounded-full bg-purple-950 px-3 py-2 text-sm text-purple-300"
-                            : "w-fit rounded-full bg-gray-800 px-3 py-2 text-sm text-gray-300"
-                        }
-                      >
-                        {utilisateur.role === "ADMIN"
-                          ? "👑 ADMIN"
-                          : "✂️ COIFFEUR"}
-                      </span>
-
-
-                      {utilisateur.user_id !==
-                        profilActuel?.user_id && (
-                        <button
-                          onClick={() => {
-                            modifierRole(
-                              utilisateur
-                            );
-                          }}
-                          disabled={
-                            modification ===
-                            utilisateur.user_id
-                          }
-                          className="min-h-11 w-full rounded-xl border border-gray-700 px-4 py-3 text-sm text-gray-300 transition hover:bg-gray-800 active:bg-gray-700 disabled:opacity-50 sm:w-auto"
-                        >
-                          {modification ===
-                            utilisateur.user_id
-                            ? "Modification..."
-                            : utilisateur.role === "ADMIN"
-                              ? "Passer COIFFEUR"
-                              : "Passer ADMIN"}
-                        </button>
-                      )}
-
+                    <div className="grid gap-3">
+                      <label className="text-sm">Nom affiché
+                        <input value={edition?.nom ?? ""} onChange={(event) => setEditions((valeurs) => ({ ...valeurs, [utilisateur.userId]: { nom: event.target.value, role: edition?.role ?? utilisateur.role } }))} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2" />
+                      </label>
+                      <label className="text-sm">Rôle et droits
+                        <select disabled={estCompteActuel} value={edition?.role ?? utilisateur.role} onChange={(event) => setEditions((valeurs) => ({ ...valeurs, [utilisateur.userId]: { nom: edition?.nom ?? utilisateur.nom, role: event.target.value as Role } }))} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2 disabled:opacity-50">
+                          {ROLES.map((role) => <option key={role} value={role}>{ROLE_DETAILS[role].libelle}</option>)}
+                        </select>
+                      </label>
+                      {estCompteActuel && <p className="text-xs text-gray-500">Pour votre sécurité, vous ne pouvez pas retirer votre propre rôle administrateur.</p>}
+                      <button type="button" disabled={actionEnCours === `profil-${utilisateur.userId}`} onClick={() => void enregistrerUtilisateur(utilisateur)} className="min-h-11 rounded-xl border border-gray-700 px-4 py-3 text-sm hover:bg-gray-800 disabled:opacity-50">
+                        {actionEnCours === `profil-${utilisateur.userId}` ? "Enregistrement..." : "Enregistrer le compte"}
+                      </button>
+                      <label className="text-sm">Nouveau mot de passe
+                        <input minLength={8} type="password" autoComplete="new-password" value={motsDePasse[utilisateur.userId] ?? ""} onChange={(event) => setMotsDePasse((valeurs) => ({ ...valeurs, [utilisateur.userId]: event.target.value }))} className="mt-2 min-h-11 w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 outline-none focus:ring-2" />
+                      </label>
+                      <button type="button" disabled={actionEnCours === `mot-de-passe-${utilisateur.userId}`} onClick={() => void changerMotDePasse(utilisateur)} className="min-h-11 rounded-xl border border-gray-700 px-4 py-3 text-sm hover:bg-gray-800 disabled:opacity-50">
+                        {actionEnCours === `mot-de-passe-${utilisateur.userId}` ? "Modification..." : "Modifier le mot de passe"}
+                      </button>
                     </div>
-
-                  </div>
-                )
-              )}
-
+                  </article>
+                );
+              })}
             </div>
-
-          </div>
-
-
-          {/* ======================================================
-              DROITS DU COIFFEUR
-          ====================================================== */}
-
-          <div className="mt-6 min-w-0 rounded-2xl border border-gray-800 bg-gray-900 p-5 sm:p-6 md:p-7">
-
-            <h2 className="text-lg font-semibold sm:text-xl">
-              Droits du coiffeur
-            </h2>
-
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-400 sm:text-base">
-              Les droits détaillés seront configurables ici.
-              Pour le moment, le rôle COIFFEUR ne peut pas
-              modifier les comptes ou les rôles.
-            </p>
-
-
-            <div className="mt-6 space-y-3">
-
-
-              {/* GESTION CLIENTS */}
-
-              <div className="flex flex-col gap-3 rounded-xl border border-gray-800 p-4 sm:flex-row sm:items-center sm:justify-between">
-
-                <div className="min-w-0">
-
-                  <p className="font-medium">
-                    Gestion des clients
-                  </p>
-
-                  <p className="mt-1 text-sm leading-5 text-gray-500">
-                    Voir, ajouter et modifier les clients.
-                  </p>
-
-                </div>
-
-                <span className="w-fit shrink-0 rounded-full bg-green-950 px-3 py-2 text-sm text-green-400">
-                  🟢 Actif
-                </span>
-
-              </div>
-
-
-              {/* GESTION PRESTATIONS */}
-
-              <div className="flex flex-col gap-3 rounded-xl border border-gray-800 p-4 sm:flex-row sm:items-center sm:justify-between">
-
-                <div className="min-w-0">
-
-                  <p className="font-medium">
-                    Gestion des prestations
-                  </p>
-
-                  <p className="mt-1 text-sm leading-5 text-gray-500">
-                    Voir, ajouter et modifier les prestations.
-                  </p>
-
-                </div>
-
-                <span className="w-fit shrink-0 rounded-full bg-green-950 px-3 py-2 text-sm text-green-400">
-                  🟢 Actif
-                </span>
-
-              </div>
-
-
-              {/* GESTION UTILISATEURS */}
-
-              <div className="flex flex-col gap-3 rounded-xl border border-gray-800 p-4 sm:flex-row sm:items-center sm:justify-between">
-
-                <div className="min-w-0">
-
-                  <p className="font-medium">
-                    Gestion des utilisateurs
-                  </p>
-
-                  <p className="mt-1 text-sm leading-5 text-gray-500">
-                    Modifier les rôles et les droits.
-                  </p>
-
-                </div>
-
-                <span className="w-fit shrink-0 rounded-full bg-red-950 px-3 py-2 text-sm text-red-400">
-                  🔴 Désactivé
-                </span>
-
-              </div>
-
-            </div>
-
-          </div>
-
+          </section>
         </section>
-
       </div>
-
     </main>
   );
 }
 
-export default function Administration()
-{
+export default function Administration() {
   return <RoleGuard roles={["ADMIN"]}><AdministrationContent /></RoleGuard>;
 }
