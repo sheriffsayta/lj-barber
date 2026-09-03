@@ -7,10 +7,12 @@ import type { Role } from "@/lib/roles";
 
 export default function RoleGuard({
   roles,
-  children
+  children,
+  loadingMessage = "Chargement..."
 }: {
   roles: Role[];
   children: React.ReactNode;
+  loadingMessage?: string;
 })
 {
   const router = useRouter();
@@ -60,7 +62,7 @@ export default function RoleGuard({
   {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-950 p-6 text-white">
-        Chargement...
+        {loadingMessage}
       </main>
     );
   }

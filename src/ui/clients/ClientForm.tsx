@@ -35,6 +35,31 @@ const paysSuggestions = [
   "Tunisie", "Turquie", "Ukraine", "Uruguay", "Venezuela", "Vietnam", "Yémen"
 ];
 
+const countrySuggestions = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Argentina",
+  "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh",
+  "Belgium", "Benin", "Bolivia", "Bosnia and Herzegovina", "Brazil", "Bulgaria",
+  "Burkina Faso", "Burundi", "Cameroon", "Canada", "Cape Verde", "Chad", "Chile",
+  "China", "Colombia", "Comoros", "Costa Rica", "Croatia", "Cuba", "Cyprus",
+  "Czech Republic", "Democratic Republic of the Congo", "Denmark", "Djibouti",
+  "Dominican Republic", "Ecuador", "Egypt", "Estonia", "Ethiopia", "Finland",
+  "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Guinea",
+  "Haiti", "Hungary", "Iceland", "India", "Indonesia", "Ireland", "Israel", "Italy",
+  "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kenya", "Kuwait", "Laos", "Latvia",
+  "Lebanon", "Libya", "Lithuania", "Luxembourg", "Madagascar", "Malaysia", "Mali",
+  "Malta", "Mauritania", "Mauritius", "Mexico", "Moldova", "Monaco", "Montenegro",
+  "Morocco", "Mozambique", "Netherlands", "New Zealand", "Niger", "Nigeria", "Norway",
+  "Oman", "Pakistan", "Palestine", "Panama", "Paraguay", "Peru", "Philippines",
+  "Poland", "Portugal", "Qatar", "Republic of the Congo", "Romania", "Russia", "Rwanda",
+  "Saudi Arabia", "Senegal", "Serbia", "Singapore", "Slovakia", "Slovenia", "Somalia",
+  "South Africa", "South Korea", "Spain", "Sri Lanka", "Sudan", "Sweden", "Switzerland",
+  "Syria", "Tanzania", "Thailand", "Togo", "Tunisia", "Turkey", "Ukraine",
+  "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Venezuela",
+  "Vietnam", "Yemen"
+];
+
+export type ClientFormLanguage = "fr" | "en";
+
 type ClientFormProps =
 {
   client?: Client;
@@ -43,6 +68,7 @@ type ClientFormProps =
   onClientInscrit?: (numeroClient: number) => void;
   onFermer?: () => void;
   mode?: "interne" | "inscription";
+  language?: ClientFormLanguage;
 };
 
 export default function ClientForm(
@@ -52,7 +78,8 @@ export default function ClientForm(
     onClientModifie,
     onClientInscrit,
     onFermer,
-    mode = "interne"
+    mode = "interne",
+    language = "fr"
   }: ClientFormProps
 )
 {
@@ -117,6 +144,68 @@ export default function ClientForm(
 
   const modification = Boolean(client);
   const inscription = mode === "inscription";
+  const anglais = inscription && language === "en";
+  const textes = anglais
+    ? {
+        prenom: "First name",
+        nom: "Last name",
+        pseudo: "Nickname",
+        telephone: "Phone number",
+        email: "Email",
+        dateNaissance: "Date of birth",
+        sexe: "Gender",
+        nonRenseigne: "Not specified",
+        homme: "Male",
+        femme: "Female",
+        reseauxSociaux: "Social media",
+        reseauxPlaceholder: "Instagram, Snapchat, @username…",
+        residences: "Countries and cities of residence",
+        residencesAide: "Optional: add as many places of residence as needed.",
+        ajouter: "+ Add",
+        pays: "Country",
+        ville: "City",
+        retirer: "Remove",
+        notes: "Notes",
+        consentementSms: "I agree to receive text messages",
+        consentementEmail: "I agree to receive emails",
+        emailRequis: " (enter an email address first)",
+        erreur: "Unable to complete your registration.",
+        enregistrement: "Saving…",
+        soumettre: "Complete my registration",
+        annuler: "Cancel"
+      }
+    : {
+        prenom: "Prénom",
+        nom: "Nom",
+        pseudo: "Pseudo",
+        telephone: "Téléphone",
+        email: "E-mail",
+        dateNaissance: "Date de naissance",
+        sexe: "Sexe",
+        nonRenseigne: "Non renseigné",
+        homme: "Homme",
+        femme: "Femme",
+        reseauxSociaux: "Réseaux sociaux",
+        reseauxPlaceholder: "Instagram, Snapchat, @pseudo…",
+        residences: "Pays et villes de résidence",
+        residencesAide: "Facultatif : ajoutez autant de résidences que nécessaire.",
+        ajouter: "+ Ajouter",
+        pays: "Pays",
+        ville: "Ville",
+        retirer: "Retirer",
+        notes: "Notes",
+        consentementSms: inscription
+          ? "J’accepte de recevoir des SMS"
+          : "Le client accepte de recevoir des SMS",
+        consentementEmail: inscription
+          ? "J’accepte de recevoir des e-mails"
+          : "Le client accepte de recevoir des e-mails",
+        emailRequis: " (renseignez d’abord une adresse e-mail)",
+        erreur: "Impossible de finaliser votre inscription.",
+        enregistrement: "Enregistrement…",
+        soumettre: "Valider mon inscription",
+        annuler: "Annuler"
+      };
 
   const donneesClient: ClientInput = {
     prenom,
@@ -201,7 +290,9 @@ export default function ClientForm(
       console.error(error);
 
       setErreur(
-        modification
+        inscription
+          ? textes.erreur
+          : modification
           ? "Impossible de modifier le client."
           : "Impossible d'ajouter le client."
       );
@@ -222,7 +313,7 @@ export default function ClientForm(
 
         <div>
           <label className="mb-2 block text-sm font-medium">
-            Prénom
+            {textes.prenom}
           </label>
 
           <input
@@ -239,7 +330,7 @@ export default function ClientForm(
 
         <div>
           <label className="mb-2 block text-sm font-medium">
-            Nom
+            {textes.nom}
           </label>
 
           <input
@@ -256,7 +347,7 @@ export default function ClientForm(
 
         <div>
           <label className="mb-2 block text-sm font-medium">
-            Pseudo
+            {textes.pseudo}
           </label>
 
           <input
@@ -272,7 +363,7 @@ export default function ClientForm(
 
         <div>
           <label className="mb-2 block text-sm font-medium">
-            Téléphone
+            {textes.telephone}
           </label>
 
           <input
@@ -289,7 +380,7 @@ export default function ClientForm(
 
         <div>
           <label className="mb-2 block text-sm font-medium">
-            Email
+            {textes.email}
           </label>
 
           <input
@@ -311,7 +402,7 @@ export default function ClientForm(
 
         <div>
           <label className="mb-2 block text-sm font-medium">
-            Date de naissance
+            {textes.dateNaissance}
           </label>
 
           <input
@@ -327,7 +418,7 @@ export default function ClientForm(
 
         <div>
           <label className="mb-2 block text-sm font-medium">
-            Sexe
+            {textes.sexe}
           </label>
 
           <select
@@ -339,15 +430,15 @@ export default function ClientForm(
             className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none focus:ring-2"
           >
             <option value="">
-              Non renseigné
+              {textes.nonRenseigne}
             </option>
 
             <option value="Homme">
-              Homme
+              {textes.homme}
             </option>
 
             <option value="Femme">
-              Femme
+              {textes.femme}
             </option>
           </select>
         </div>
@@ -389,7 +480,7 @@ export default function ClientForm(
 
       <div>
         <label className="mb-2 block text-sm font-medium">
-          Réseaux sociaux
+          {textes.reseauxSociaux}
         </label>
 
         <input
@@ -399,7 +490,7 @@ export default function ClientForm(
           {
             setReseauxSociaux(event.target.value);
           }}
-          placeholder="Instagram, Snapchat, @pseudo…"
+          placeholder={textes.reseauxPlaceholder}
           className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:ring-2"
         />
       </div>
@@ -407,9 +498,9 @@ export default function ClientForm(
       <div className="rounded-xl border border-gray-800 p-4">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h3 className="font-medium">Pays et villes de résidence</h3>
+            <h3 className="font-medium">{textes.residences}</h3>
             <p className="mt-1 text-sm text-gray-400">
-              Facultatif : ajoutez autant de résidences que nécessaire.
+              {textes.residencesAide}
             </p>
           </div>
 
@@ -418,12 +509,12 @@ export default function ClientForm(
             onClick={ajouterLocalisation}
             className="shrink-0 rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 hover:bg-gray-800"
           >
-            + Ajouter
+            {textes.ajouter}
           </button>
         </div>
 
         <datalist id="pays-residence">
-          {paysSuggestions.map((pays) => (
+          {(anglais ? countrySuggestions : paysSuggestions).map((pays) => (
             <option key={pays} value={pays} />
           ))}
         </datalist>
@@ -438,7 +529,7 @@ export default function ClientForm(
                 onChange={(event) =>
                   modifierLocalisation(index, "pays", event.target.value)
                 }
-                placeholder="Pays"
+                placeholder={textes.pays}
                 className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:ring-2"
               />
 
@@ -448,7 +539,7 @@ export default function ClientForm(
                 onChange={(event) =>
                   modifierLocalisation(index, "ville", event.target.value)
                 }
-                placeholder="Ville"
+                placeholder={textes.ville}
                 className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:ring-2"
               />
 
@@ -457,7 +548,7 @@ export default function ClientForm(
                 onClick={() => supprimerLocalisation(index)}
                 className="rounded-lg border border-red-900 px-3 py-2 text-sm text-red-300 hover:bg-red-950"
               >
-                Retirer
+                {textes.retirer}
               </button>
             </div>
           ))}
@@ -466,7 +557,7 @@ export default function ClientForm(
 
       <div>
         <label className="mb-2 block text-sm font-medium">
-          Notes
+          {textes.notes}
         </label>
 
         <textarea
@@ -493,7 +584,7 @@ export default function ClientForm(
         />
 
         <span className="text-sm">
-          Le client accepte de recevoir des SMS
+          {textes.consentementSms}
         </span>
 
       </label>
@@ -512,8 +603,8 @@ export default function ClientForm(
         />
 
         <span className="text-sm">
-          Le client accepte de recevoir des e-mails
-          {!email.trim() && " (renseignez d’abord une adresse e-mail)"}
+          {textes.consentementEmail}
+          {!email.trim() && textes.emailRequis}
         </span>
 
       </label>
@@ -532,10 +623,12 @@ export default function ClientForm(
           className="rounded-lg bg-white px-5 py-3 font-medium text-black hover:opacity-90 disabled:opacity-50"
         >
           {enregistrement
-            ? "Enregistrement..."
+            ? textes.enregistrement
             : modification
               ? "Enregistrer les modifications"
-              : "Ajouter le client"}
+              : inscription
+                ? textes.soumettre
+                : "Ajouter le client"}
         </button>
 
         {onFermer && (
@@ -544,7 +637,7 @@ export default function ClientForm(
             onClick={onFermer}
             className="rounded-lg border border-gray-700 px-5 py-3 text-gray-300 hover:bg-gray-800"
           >
-            Annuler
+            {textes.annuler}
           </button>
         )}
 

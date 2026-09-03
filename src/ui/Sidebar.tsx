@@ -26,9 +26,11 @@ const liens = [
 
 export default function Sidebar(
   {
-    client = false
+    client = false,
+    language = "fr"
   }: {
     client?: boolean;
+    language?: "fr" | "en";
   }
 )
 {
@@ -40,6 +42,7 @@ export default function Sidebar(
 
   const [menuOuvert, setMenuOuvert] =
     useState(false);
+  const anglais = client && language === "en";
 
 
   // ============================================================
@@ -168,8 +171,8 @@ export default function Sidebar(
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-700 text-xl text-white hover:bg-gray-800 active:bg-gray-700"
             aria-label={
               menuOuvert
-                ? "Fermer le menu"
-                : "Ouvrir le menu"
+                ? (anglais ? "Close menu" : "Fermer le menu")
+                : (anglais ? "Open menu" : "Ouvrir le menu")
             }
             aria-expanded={menuOuvert}
           >
@@ -202,7 +205,7 @@ export default function Sidebar(
       {menuOuvert && (
         <button
           type="button"
-          aria-label="Fermer le menu"
+          aria-label={anglais ? "Close menu" : "Fermer le menu"}
           onClick={fermerMenu}
           className="fixed inset-0 z-40 bg-black/60"
         />
@@ -246,7 +249,7 @@ export default function Sidebar(
             type="button"
             onClick={fermerMenu}
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-700 text-lg text-white hover:bg-gray-800"
-            aria-label="Fermer le menu"
+            aria-label={anglais ? "Close menu" : "Fermer le menu"}
           >
             ✕
           </button>
@@ -327,7 +330,7 @@ export default function Sidebar(
           </span>
 
           <span>
-            Déconnexion
+            {anglais ? "Sign out" : "Déconnexion"}
           </span>
 
         </button>
